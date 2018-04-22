@@ -2,4 +2,4 @@
 
 # Extracting from FTP or Local Directory
 # Transforming using dplyr
-# Loading into Google Cloud Storage
+# Loading into Google Cloud Storage/BigQuery
