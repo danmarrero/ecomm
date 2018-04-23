@@ -470,5 +470,29 @@ insert_upload_job(
   table = "fcst_locked_isaiah",
   fcst_isaiah,
   billing = project,
-  write_disposition = "WRITE_APPEND"
+  write_disposition = "WRITE_TRUNCATE"
+)
+
+dpm_fcst_lock <- dpm_fcst %>%
+  select(F_YR_WK, SKU_NBR, FCST_DPM) %>%
+  group_by(F_YR_WK, SKU_NBR) %>%
+  summarise(FCST = sum(FCST_DPM)) %>%
+  spread(F_YR_WK, FCST, fill = 0) %>%
+  mutate("brand" = "GLSCOM") %>%
+  mutate("tw_fcst" = rowSums(.[2])) %>%
+  mutate("n04w_fcst" = rowSums(.[2:5])) %>%
+  mutate("n13w_fcst" = rowSums(.[2:14])) %>%
+  mutate("yr_wk_lock" = yr_wk_lock) %>%
+  select(brand, yr_wk_lock, SKU_NBR, tw_fcst, n04w_fcst, n13w_fcst) %>%
+  filter(n13w_fcst > 0)
+
+names(dpm_fcst_lock)[3] <- "upc"
+
+insert_upload_job(
+  project = project,
+  dataset = "ecomm",
+  table = "fcst_locked_dpm",
+  dpm_fcst_lock,
+  billing = project,
+  write_disposition = "WRITE_TRUNCATE"
 )
