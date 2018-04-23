@@ -77,7 +77,7 @@ l52w_sls <- l52w_sls_dpm %>%
 l52w_sls <- left_join(l52w_sls, hist_wk, by = "F_YR_WK")
 
 l52w_sls <- l52w_sls %>%
-  filter(HIST_WK <= 53 & HIST_WK >= 2)
+  filter(HIST_WK <= 52 & HIST_WK >= 1)
 
 dpm_fcst <- l52w_sls_dpm %>%
   select(F_YR, F_WK, CL_NME, DPT, SKU_NBR, FCST_DPM, F_YR_WK)
@@ -410,10 +410,12 @@ hist_l52w_sls <- hist_l52w_sls %>%
 names(hist_l52w_sls)[2] <- "upc"
 
 curr_week <- hist_wk %>%
-  filter(HIST_WK == 1) %>%
+  filter(HIST_WK == 52) %>%
   select(F_YR_WK)
 
-yr_wk_lock <- as_vector(curr_week[1])
+
+
+yr_wk_lock <- as_vector(curr_week[1] + 100)
 
 # 04 - Summarize and Export Mode ------------------------------------------
 
