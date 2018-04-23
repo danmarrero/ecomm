@@ -197,8 +197,6 @@ names(l17w_sls_cast)[19:35] <- c("IND_1", "IND_2", "IND_3", "IND_4", "IND_5",
                                  "IND_11", "IND_12", "IND_13", "IND_14", 
                                  "IND_15", "IND_16", "IND_17")
 
-# 02 Model data ----------------------------------------------------------------
-
 # Holt Winters Damped Trend Multiplicative Seasonlity Model
 
 # Train & Optimize Model
@@ -400,23 +398,22 @@ hist_l52w_sls <- l52w_sls %>%
 hist_l52w_sls <- as.data.frame(hist_l52w_sls)
 
 hist_l52w_sls <- hist_l52w_sls %>%
-  mutate("L6W_SLS" = hist_l52w_sls$`1` + hist_l52w_sls$`2` + hist_l52w_sls$`3` +
-           hist_l52w_sls$`4` + hist_l52w_sls$`5` + hist_l52w_sls$`6`) %>%
-  mutate("L13W_SLS" = hist_l52w_sls$`1` + hist_l52w_sls$`2` +
-           hist_l52w_sls$`3` + hist_l52w_sls$`4` + hist_l52w_sls$`5` +
-           hist_l52w_sls$`6` + hist_l52w_sls$`7` + hist_l52w_sls$`8` +
-           hist_l52w_sls$`9` + hist_l52w_sls$`10` + hist_l52w_sls$`11` +
-           hist_l52w_sls$`12` + hist_l52w_sls$`13`) %>%
-  mutate("L26W_SLS" = hist_l52w_sls$`1` + hist_l52w_sls$`2` +
-           hist_l52w_sls$`3` + hist_l52w_sls$`4` + hist_l52w_sls$`5` +
-           hist_l52w_sls$`6` + hist_l52w_sls$`7` + hist_l52w_sls$`8` +
-           hist_l52w_sls$`9` + hist_l52w_sls$`10` + hist_l52w_sls$`11` +
-           hist_l52w_sls$`12` + hist_l52w_sls$`13` + hist_l52w_sls$`14` +
-           hist_l52w_sls$`15` + hist_l52w_sls$`16` + hist_l52w_sls$`17` +
-           hist_l52w_sls$`18` + hist_l52w_sls$`19` + hist_l52w_sls$`20` +
-           hist_l52w_sls$`21` + hist_l52w_sls$`22` + hist_l52w_sls$`23` +
-           hist_l52w_sls$`24` + hist_l52w_sls$`25` + hist_l52w_sls$`26`)
+  mutate("lw_sls" = rowSums(.[2])) %>%
+  mutate("l04w_sls" = rowSums(.[2:5])) %>%
+  mutate("l13w_sls" = rowSums(.[2:14])) %>%
+  mutate("l26w_sls" = rowSums(.[2:27])) %>%
+  mutate("l52w_sls" = rowSums(.[2:53])) %>%
+  mutate("brand" = "GLSCOM") %>%
+  select(brand, SKU_NBR, lw_sls, l04w_sls, l13w_sls, l26w_sls, l52w_sls) %>%
+  filter(l52w_sls > 0)
 
+names(hist_l52w_sls)[2] <- "upc"
+
+curr_week <- hist_wk %>%
+  filter(HIST_WK == 1) %>%
+  select(F_YR_WK)
+
+yr_wk_lock <- as_vector(curr_week[1])
 
 # 04 - Summarize and Export Mode ------------------------------------------
 
@@ -431,17 +428,20 @@ names(fcst_sku_loc)[6:57] <- c("1","2","3","4","5","6","7","8","9","10","11",
                                "48","49","50","51","52")
 
 fcst_sku_loc <- fcst_sku_loc %>%
-  mutate("N04W_FCST" = fcst_sku_loc$`1` + fcst_sku_loc$`2` + fcst_sku_loc$`3` +
+  mutate("brand" = "GLSCOM") %>%
+  mutate("yr_wk_lock" = yr_wk_lock) %>%
+  mutate("tw_fcst" = fcst_sku_loc$`1`) %>%
+  mutate("n04w_fcst" = fcst_sku_loc$`1` + fcst_sku_loc$`2` + fcst_sku_loc$`3` +
            fcst_sku_loc$`4`) %>%
-  mutate("FCST_5" = fcst_sku_loc$`5` + 0 ) %>%
-  mutate("N6W_FCST" = fcst_sku_loc$`1` + fcst_sku_loc$`2` + fcst_sku_loc$`3` +
+  mutate("fcst_5" = fcst_sku_loc$`5` + 0 ) %>%
+  mutate("n6w_fcst" = fcst_sku_loc$`1` + fcst_sku_loc$`2` + fcst_sku_loc$`3` +
            fcst_sku_loc$`4` + fcst_sku_loc$`5` + fcst_sku_loc$`6` ) %>%
-  mutate("N13W_FCST" = fcst_sku_loc$`1` + fcst_sku_loc$`2` + fcst_sku_loc$`3` +
+  mutate("n13w_fcst" = fcst_sku_loc$`1` + fcst_sku_loc$`2` + fcst_sku_loc$`3` +
            fcst_sku_loc$`4` + fcst_sku_loc$`5` + fcst_sku_loc$`6` +
            fcst_sku_loc$`7` + fcst_sku_loc$`8` + fcst_sku_loc$`9` +
            fcst_sku_loc$`10` + fcst_sku_loc$`11` + fcst_sku_loc$`12` +
            fcst_sku_loc$`13`) %>%
-  mutate("N26W_FCST" = fcst_sku_loc$`1` + fcst_sku_loc$`2` + fcst_sku_loc$`3` +
+  mutate("n26w_fcst" = fcst_sku_loc$`1` + fcst_sku_loc$`2` + fcst_sku_loc$`3` +
            fcst_sku_loc$`4` + fcst_sku_loc$`5` + fcst_sku_loc$`6` +
            fcst_sku_loc$`7` + fcst_sku_loc$`8` + fcst_sku_loc$`9` +
            fcst_sku_loc$`10` + fcst_sku_loc$`11` + fcst_sku_loc$`12` +
@@ -450,14 +450,25 @@ fcst_sku_loc <- fcst_sku_loc %>%
            fcst_sku_loc$`19` + fcst_sku_loc$`20` + fcst_sku_loc$`21` +
            fcst_sku_loc$`22` + fcst_sku_loc$`23` + fcst_sku_loc$`24` +
            fcst_sku_loc$`25` + fcst_sku_loc$`26`) %>%
-  mutate("N52W_FCST" = rowSums(.[6:57]))
+  mutate("n52w_fcst" = rowSums(.[6:57]))
 
-colnames(fcst_sku_loc)[3] <- "UPC" 
+colnames(fcst_sku_loc)[3] <- "upc" 
 
 fcst_isaiah <- fcst_sku_loc %>%
-  select(UPC, N04W_FCST, N13W_FCST, N26W_FCST, N52W_FCST)
+  select(brand, yr_wk_lock, upc, tw_fcst, n04w_fcst, n13w_fcst, n26w_fcst,
+         n52w_fcst) %>%
+  filter(n52w_fcst > 0)
 
-fcst_isaiah$N52W_FCST[is.na(fcst_isaiah$N52W_FCST)] <- 0
-fcst_isaiah$N26W_FCST[is.na(fcst_isaiah$N26W_FCST)] <- 0
-fcst_isaiah$N13W_FCST[is.na(fcst_isaiah$N13W_FCST)] <- 0
-fcst_isaiah$N04W_FCST[is.na(fcst_isaiah$N04W_FCST)] <- 0
+fcst_isaiah$n52w_fcst[is.na(fcst_isaiah$n52w_fcst)] <- 0
+fcst_isaiah$n26w_fcst[is.na(fcst_isaiah$n26w_fcst)] <- 0
+fcst_isaiah$n13w_fcst[is.na(fcst_isaiah$n13w_fcst)] <- 0
+fcst_isaiah$n04w_fcst[is.na(fcst_isaiah$n04w_fcst)] <- 0
+
+insert_upload_job(
+  project = project,
+  dataset = "ecomm",
+  table = "fcst_locked_isaiah",
+  fcst_isaiah,
+  billing = project,
+  write_disposition = "WRITE_APPEND"
+)
