@@ -8,7 +8,7 @@ rm(list = ls(all.names = TRUE))
 
 options(scipen = 999)
 
-options(googleAuthR.scopes.selected = 
+options(googleAuthR.scopes.selected =
           "https://www.googleapis.com/auth/cloud-platform")
 
 project <- "ecomm-197702"
@@ -41,8 +41,8 @@ gcs_get_object("data/raw_data/dpm_hist_fcst.xlsx",
 l52w_sls_dpm <- read_excel("dpm_hist_fcst.xlsx")
 
 sql <- "SELECT   f_yr_week, id
-        FROM     [ecomm-197702:ecomm.time_dim]
-        GROUP BY f_yr_week, id"
+FROM     [ecomm-197702:ecomm.time_dim]
+GROUP BY f_yr_week, id"
 
 hist_wk <- query_exec(sql, project = project)
 
@@ -61,15 +61,16 @@ names(hist_wk)[2] <- "HIST_WK"
 l52w_sls_dpm$F_WK <- str_pad(l52w_sls_dpm$F_WK,
                              width = 2,
                              side = "left",
-                             pad = "0"
-                             )
+                             pad = "0")
 
-l52w_sls_dpm <- transform(l52w_sls_dpm,F_YR_WK = paste0(F_YR,F_WK))
+l52w_sls_dpm <- transform(l52w_sls_dpm, F_YR_WK = paste0(F_YR, F_WK))
 
 l52w_sls_dpm$F_YR <- as.numeric(as.character(l52w_sls_dpm$F_YR))
 l52w_sls_dpm$F_WK <- as.numeric(as.character(l52w_sls_dpm$F_WK))
-l52w_sls_dpm$F_YR_WK <- as.numeric(as.character(l52w_sls_dpm$F_YR_WK))
-l52w_sls_dpm$SKU_NBR <- as.numeric(as.character(l52w_sls_dpm$SKU_NBR))
+l52w_sls_dpm$F_YR_WK <-
+  as.numeric(as.character(l52w_sls_dpm$F_YR_WK))
+l52w_sls_dpm$SKU_NBR <-
+  as.numeric(as.character(l52w_sls_dpm$SKU_NBR))
 
 l52w_sls <- l52w_sls_dpm %>%
   select(F_YR, F_WK, CL_NME, DPT, SKU_NBR, SLS_U, F_YR_WK)
@@ -90,8 +91,9 @@ dpm_fcst <- dpm_fcst %>%
 
 # 03 - Model --------------------------------------------------------------
 
-l52w_sls_select <- select(l52w_sls, F_YR, F_WK, CL_NME, DPT, SKU_NBR,
-                          SLS_U, F_YR_WK)
+l52w_sls_select <-
+  select(l52w_sls, F_YR, F_WK, CL_NME, DPT, SKU_NBR,
+         SLS_U, F_YR_WK)
 
 # Filter new variable to not show negative sales
 #l52w_sls_select <- filter(l52w_sls_select, l52w_sls_select$SLS_U > 0)
@@ -103,7 +105,7 @@ l52w_sls_select_class <- l52w_sls_select %>%
 
 # Create new column for DPT/CL
 l52w_sls_select_class <- transform(l52w_sls_select_class, DPT_CL =
-                                     paste0(DPT,CL_NME))
+                                     paste0(DPT, CL_NME))
 
 # Create new variable summarising sales units by DPT/CL
 total_class_sls <- l52w_sls_select_class %>%
@@ -111,14 +113,18 @@ total_class_sls <- l52w_sls_select_class %>%
   summarise(sum(sum.SLS_U.))
 
 # Join last two variables to bring in "total_class_sls" by "DPT_CL"
-l52w_sls_select_class <- left_join(l52w_sls_select_class, total_class_sls,
-                                   by = "DPT_CL")
+l52w_sls_select_class <-
+  left_join(l52w_sls_select_class, total_class_sls,
+            by = "DPT_CL")
 
 # Calculate INDEX for each DPT/CL
-l52w_sls_select_class <- mutate(l52w_sls_select_class, INDEX =
-                                  l52w_sls_select_class$sum.SLS_U./
-                                  ((1/52) * 
-                                     l52w_sls_select_class$`sum(sum.SLS_U.)`))
+l52w_sls_select_class <- mutate(
+  l52w_sls_select_class,
+  INDEX =
+    l52w_sls_select_class$sum.SLS_U. /
+    ((1 / 52) *
+       l52w_sls_select_class$`sum(sum.SLS_U.)`)
+)
 
 # Rename summary sum columns
 l52w_sls_select_class <- rename(l52w_sls_select_class,
@@ -135,7 +141,8 @@ h_wk_vector <- as.vector(h_wk_vector)
 
 hist_wks$HIST_WK <- h_wk_vector
 
-l52w_sls_select <- left_join(l52w_sls_select, hist_wks, by = "F_YR_WK")
+l52w_sls_select <-
+  left_join(l52w_sls_select, hist_wks, by = "F_YR_WK")
 
 # Filter variable to only show last 17 weeks of sales
 l17w_sls <- filter(l52w_sls_select,
@@ -147,14 +154,16 @@ l17w_sls <- l17w_sls %>%
   summarise(sum(SLS_U))
 
 # Create column combining DPT/CL/WK
-l52w_sls_select_class <- transform(l52w_sls_select_class, DPT_CL_WK =
-                                     paste0(DPT_CL, F_WK))
+l52w_sls_select_class <-
+  transform(l52w_sls_select_class, DPT_CL_WK =
+              paste0(DPT_CL, F_WK))
 
 # Create variable containing INDEX by DPT/CL/WK
 index <- select(l52w_sls_select_class, DPT_CL_WK, INDEX)
 
 # Create column combining DPT/CL/WK
-l17w_sls <- transform(l17w_sls, DPT_CL_WK = paste0(DPT, CL_NME, F_WK))
+l17w_sls <-
+  transform(l17w_sls, DPT_CL_WK = paste0(DPT, CL_NME, F_WK))
 
 # Lookup "INDEX" into l17w_sls variable from index variable
 l17w_sls <- left_join(l17w_sls, index,
@@ -171,43 +180,80 @@ l17w_sls <- l17w_sls %>%
 l17w_sls <- l17w_sls %>%
   filter(!is.na(SKU_NBR))
 
-l17w_sls_cast <- l17w_sls %>% select(F_YR_WK, SKU_NBR, sum.SLS_U.) %>%
+l17w_sls_cast <-
+  l17w_sls %>% select(F_YR_WK, SKU_NBR, sum.SLS_U.) %>%
   spread(F_YR_WK, sum.SLS_U., fill = 0)
 
-l17w_sls_cast_2 <- l17w_sls %>% select(F_YR_WK_2, SKU_NBR, INDEX) %>%
+l17w_sls_cast_2 <-
+  l17w_sls %>% select(F_YR_WK_2, SKU_NBR, INDEX) %>%
   spread(F_YR_WK_2, INDEX, fill = 0.1)
 
 # Bind data frames and remove duplicate columns
 
 l17w_sls_cast <- bind_cols(l17w_sls_cast, l17w_sls_cast_2)
-l17w_sls_cast <- l17w_sls_cast[, !duplicated(colnames(l17w_sls_cast))]
+l17w_sls_cast <-
+  l17w_sls_cast[,!duplicated(colnames(l17w_sls_cast))]
 
 l17w_sls_cast <- l17w_sls_cast %>%
   select(-SKU_NBR1)
 
 # Rename column headers
 
-names(l17w_sls_cast)[2:18] <- c("SLS_1", "SLS_2", "SLS_3", "SLS_4", "SLS_5",
-                                "SLS_6", "SLS_7", "SLS_8", "SLS_9", "SLS_10",
-                                "SLS_11", "SLS_12", "SLS_13", "SLS_14", 
-                                "SLS_15", "SLS_16", "SLS_17")
+names(l17w_sls_cast)[2:18] <-
+  c(
+    "SLS_1",
+    "SLS_2",
+    "SLS_3",
+    "SLS_4",
+    "SLS_5",
+    "SLS_6",
+    "SLS_7",
+    "SLS_8",
+    "SLS_9",
+    "SLS_10",
+    "SLS_11",
+    "SLS_12",
+    "SLS_13",
+    "SLS_14",
+    "SLS_15",
+    "SLS_16",
+    "SLS_17"
+  )
 
-names(l17w_sls_cast)[19:35] <- c("IND_1", "IND_2", "IND_3", "IND_4", "IND_5",
-                                 "IND_6", "IND_7", "IND_8", "IND_9", "IND_10",
-                                 "IND_11", "IND_12", "IND_13", "IND_14", 
-                                 "IND_15", "IND_16", "IND_17")
+names(l17w_sls_cast)[19:35] <-
+  c(
+    "IND_1",
+    "IND_2",
+    "IND_3",
+    "IND_4",
+    "IND_5",
+    "IND_6",
+    "IND_7",
+    "IND_8",
+    "IND_9",
+    "IND_10",
+    "IND_11",
+    "IND_12",
+    "IND_13",
+    "IND_14",
+    "IND_15",
+    "IND_16",
+    "IND_17"
+  )
 
 # Holt Winters Damped Trend Multiplicative Seasonlity Model
 
 # Train & Optimize Model
 
-iter_df <- l17w_sls_cast[FALSE,]
+iter_df <- l17w_sls_cast[FALSE, ]
 new_df <- data.frame()
 
-hwdtms <- function(a = 0.1, g = 0, p = 0) {
+hwdtms <- function(a = 0.1,
+                   g = 0,
+                   p = 0) {
   lvl_1 <- iter_df$SLS_1 / iter_df$IND_1
   trnd_1 <- 0
-  lvl_2 <- a * iter_df$SLS_2 / iter_df$IND_2 + 
+  lvl_2 <- a * iter_df$SLS_2 / iter_df$IND_2 +
     (1 - a) * (lvl_1 + trnd_1)
   trnd_2 <- g * (lvl_2 - lvl_1) + (1 - g) * trnd_1
   lvl_3 <- a * iter_df$SLS_3 / iter_df$IND_3 +
@@ -248,9 +294,9 @@ hwdtms <- function(a = 0.1, g = 0, p = 0) {
   trnd_16 <- trnd_13
   trnd_17 <- trnd_13
   lvl_14 <- lvl_13 + p * trnd_14
-  lvl_15 <- lvl_13 + (p + p^2) * trnd_15
-  lvl_16 <- lvl_13 + (p + p^2 + p^3) * trnd_16
-  lvl_17 <- lvl_13 + (p + p^2 + p^3 + p^4) * trnd_17
+  lvl_15 <- lvl_13 + (p + p ^ 2) * trnd_15
+  lvl_16 <- lvl_13 + (p + p ^ 2 + p ^ 3) * trnd_16
+  lvl_17 <- lvl_13 + (p + p ^ 2 + p ^ 3 + p ^ 4) * trnd_17
   ftest_1 <- lvl_14 * iter_df$IND_14
   ftest_2 <- lvl_15 * iter_df$IND_15
   ftest_3 <- lvl_16 * iter_df$IND_16
@@ -269,10 +315,15 @@ hwdtms <- function(a = 0.1, g = 0, p = 0) {
   return(abs_e)
 }
 
-for(i in 1:nrow(l17w_sls_cast)) {
-  iter_df <- l17w_sls_cast[i,]
-  parameters <- optim(c(0.1), hwdtms, method = "L-BFGS-B",
-                      lower = c(0.1), upper = c(0.75))
+for (i in 1:nrow(l17w_sls_cast)) {
+  iter_df <- l17w_sls_cast[i, ]
+  parameters <- optim(
+    c(0.1),
+    hwdtms,
+    method = "L-BFGS-B",
+    lower = c(0.1),
+    upper = c(0.75)
+  )
   iter_df$ALPHA <- parameters$par[1]
   iter_df$GAMMA <- parameters$par[2]
   iter_df$PHI <- parameters$par[3]
@@ -328,7 +379,8 @@ new_df <- new_df %>%
 fcst_level <- new_df$LVL_17
 fcst_level <- as.data.frame(fcst_level)
 
-fcst_index <- l52w_sls_select_class %>% select(DPT_CL, F_WK, INDEX) %>%
+fcst_index <-
+  l52w_sls_select_class %>% select(DPT_CL, F_WK, INDEX) %>%
   spread(F_WK, INDEX, fill = 0.1)
 
 fcst_skus <- l17w_sls_cast %>%
@@ -351,11 +403,62 @@ fcst <- left_join(fcst, fcst_dpt_cl, by = "SKU_NBR")
 fcst <- left_join(fcst, fcst_index, by = "DPT_CL")
 
 fcst <- fcst %>%
-  gather(`1`,`2`,`3`,`4`,`5`,`6`,`7`,`8`,`9`,`10`,`11`,`12`,`13`,
-         `14`,`15`,`16`,`17`,`18`,`19`,`20`,`21`,`22`,`23`,`24`,`25`,`26`,
-         `27`,`28`,`29`,`30`,`31`,`32`,`33`,`34`,`35`,`36`,`37`,`38`,`39`,
-         `40`,`41`,`42`,`43`,`44`,`45`,`46`,`47`,`48`,`49`,`50`,`51`,`52`,
-         key = "WK", value = "INDEX")
+  gather(
+    `1`,
+    `2`,
+    `3`,
+    `4`,
+    `5`,
+    `6`,
+    `7`,
+    `8`,
+    `9`,
+    `10`,
+    `11`,
+    `12`,
+    `13`,
+    `14`,
+    `15`,
+    `16`,
+    `17`,
+    `18`,
+    `19`,
+    `20`,
+    `21`,
+    `22`,
+    `23`,
+    `24`,
+    `25`,
+    `26`,
+    `27`,
+    `28`,
+    `29`,
+    `30`,
+    `31`,
+    `32`,
+    `33`,
+    `34`,
+    `35`,
+    `36`,
+    `37`,
+    `38`,
+    `39`,
+    `40`,
+    `41`,
+    `42`,
+    `43`,
+    `44`,
+    `45`,
+    `46`,
+    `47`,
+    `48`,
+    `49`,
+    `50`,
+    `51`,
+    `52`,
+    key = "WK",
+    value = "INDEX"
+  )
 
 fcst <- arrange(fcst, SKU_NBR)
 
@@ -370,7 +473,7 @@ fcst_wks <- mutate(fcst_wks, "FCST_YR_WK" = F_YR_WK + 100)
 fcst_wks$F_YR_WK <- NULL
 fcst_wks$HIST_WK <- NULL
 fcst_wks <- rename(fcst_wks, WK = F_WK)
-fcst$WK <-as.numeric(as.character(fcst$WK)) 
+fcst$WK <- as.numeric(as.character(fcst$WK))
 fcst <- left_join(fcst, fcst_wks, by = "WK")
 fcst <- fcst %>%
   mutate("FCST_LK_WK" = min(FCST_YR_WK))
@@ -380,8 +483,15 @@ dpt_class <- select(l52w_sls_select_class, DPT_CL, DPT, CL_NME)
 dpt_class <- unique(dpt_class)
 
 fcst <- left_join(fcst, dpt_class, by = "DPT_CL")
-fcst <- select(fcst, DPT, CL_NME, SKU_NBR, FCST_YR_WK, FCST, fcst_level,
-               FCST_LK_WK)
+fcst <-
+  select(fcst,
+         DPT,
+         CL_NME,
+         SKU_NBR,
+         FCST_YR_WK,
+         FCST,
+         fcst_level,
+         FCST_LK_WK)
 fcst <- arrange(fcst, DPT, SKU_NBR, FCST_YR_WK)
 
 
@@ -393,7 +503,7 @@ hist_l52w_sls <- l52w_sls %>%
   summarise(sum(SLS_U)) %>%
   rename(SLS = `sum(SLS_U)`) %>%
   arrange(SKU_NBR, HIST_WK.x) %>%
-  spread(HIST_WK.x, SLS, fill = 0 )
+  spread(HIST_WK.x, SLS, fill = 0)
 
 hist_l52w_sls <- as.data.frame(hist_l52w_sls)
 
@@ -422,12 +532,61 @@ yr_wk_lock <- as_vector(curr_week[1] + 100)
 fcst_sku_loc <- fcst %>%
   spread(FCST_YR_WK, FCST, fill = 0)
 
-names(fcst_sku_loc)[6:57] <- c("1","2","3","4","5","6","7","8","9","10","11",
-                               "12","13","14","15","16","17","18","19","20",
-                               "21","22","23","24","25","26","27","28","29",
-                               "30","31","32","33","34","35","36","37","38",
-                               "39","40","41","42","43","44","45","46","47",
-                               "48","49","50","51","52")
+names(fcst_sku_loc)[6:57] <-
+  c(
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16",
+    "17",
+    "18",
+    "19",
+    "20",
+    "21",
+    "22",
+    "23",
+    "24",
+    "25",
+    "26",
+    "27",
+    "28",
+    "29",
+    "30",
+    "31",
+    "32",
+    "33",
+    "34",
+    "35",
+    "36",
+    "37",
+    "38",
+    "39",
+    "40",
+    "41",
+    "42",
+    "43",
+    "44",
+    "45",
+    "46",
+    "47",
+    "48",
+    "49",
+    "50",
+    "51",
+    "52"
+  )
 
 fcst_sku_loc <- fcst_sku_loc %>%
   mutate("brand" = "GLSCOM") %>%
@@ -435,29 +594,41 @@ fcst_sku_loc <- fcst_sku_loc %>%
   mutate("tw_fcst" = fcst_sku_loc$`1`) %>%
   mutate("n04w_fcst" = fcst_sku_loc$`1` + fcst_sku_loc$`2` + fcst_sku_loc$`3` +
            fcst_sku_loc$`4`) %>%
-  mutate("fcst_5" = fcst_sku_loc$`5` + 0 ) %>%
-  mutate("n6w_fcst" = fcst_sku_loc$`1` + fcst_sku_loc$`2` + fcst_sku_loc$`3` +
-           fcst_sku_loc$`4` + fcst_sku_loc$`5` + fcst_sku_loc$`6` ) %>%
-  mutate("n13w_fcst" = fcst_sku_loc$`1` + fcst_sku_loc$`2` + fcst_sku_loc$`3` +
-           fcst_sku_loc$`4` + fcst_sku_loc$`5` + fcst_sku_loc$`6` +
-           fcst_sku_loc$`7` + fcst_sku_loc$`8` + fcst_sku_loc$`9` +
-           fcst_sku_loc$`10` + fcst_sku_loc$`11` + fcst_sku_loc$`12` +
-           fcst_sku_loc$`13`) %>%
-  mutate("n26w_fcst" = fcst_sku_loc$`1` + fcst_sku_loc$`2` + fcst_sku_loc$`3` +
-           fcst_sku_loc$`4` + fcst_sku_loc$`5` + fcst_sku_loc$`6` +
-           fcst_sku_loc$`7` + fcst_sku_loc$`8` + fcst_sku_loc$`9` +
-           fcst_sku_loc$`10` + fcst_sku_loc$`11` + fcst_sku_loc$`12` +
-           fcst_sku_loc$`13` + fcst_sku_loc$`14` + fcst_sku_loc$`15` +
-           fcst_sku_loc$`16` + fcst_sku_loc$`17` + fcst_sku_loc$`18` +
-           fcst_sku_loc$`19` + fcst_sku_loc$`20` + fcst_sku_loc$`21` +
-           fcst_sku_loc$`22` + fcst_sku_loc$`23` + fcst_sku_loc$`24` +
-           fcst_sku_loc$`25` + fcst_sku_loc$`26`) %>%
+  mutate("fcst_5" = fcst_sku_loc$`5` + 0) %>%
+  mutate(
+    "n6w_fcst" = fcst_sku_loc$`1` + fcst_sku_loc$`2` + fcst_sku_loc$`3` +
+      fcst_sku_loc$`4` + fcst_sku_loc$`5` + fcst_sku_loc$`6`
+  ) %>%
+  mutate(
+    "n13w_fcst" = fcst_sku_loc$`1` + fcst_sku_loc$`2` + fcst_sku_loc$`3` +
+      fcst_sku_loc$`4` + fcst_sku_loc$`5` + fcst_sku_loc$`6` +
+      fcst_sku_loc$`7` + fcst_sku_loc$`8` + fcst_sku_loc$`9` +
+      fcst_sku_loc$`10` + fcst_sku_loc$`11` + fcst_sku_loc$`12` +
+      fcst_sku_loc$`13`
+  ) %>%
+  mutate(
+    "n26w_fcst" = fcst_sku_loc$`1` + fcst_sku_loc$`2` + fcst_sku_loc$`3` +
+      fcst_sku_loc$`4` + fcst_sku_loc$`5` + fcst_sku_loc$`6` +
+      fcst_sku_loc$`7` + fcst_sku_loc$`8` + fcst_sku_loc$`9` +
+      fcst_sku_loc$`10` + fcst_sku_loc$`11` + fcst_sku_loc$`12` +
+      fcst_sku_loc$`13` + fcst_sku_loc$`14` + fcst_sku_loc$`15` +
+      fcst_sku_loc$`16` + fcst_sku_loc$`17` + fcst_sku_loc$`18` +
+      fcst_sku_loc$`19` + fcst_sku_loc$`20` + fcst_sku_loc$`21` +
+      fcst_sku_loc$`22` + fcst_sku_loc$`23` + fcst_sku_loc$`24` +
+      fcst_sku_loc$`25` + fcst_sku_loc$`26`
+  ) %>%
   mutate("n52w_fcst" = rowSums(.[6:57]))
 
-colnames(fcst_sku_loc)[3] <- "upc" 
+colnames(fcst_sku_loc)[3] <- "upc"
 
 fcst_isaiah <- fcst_sku_loc %>%
-  select(brand, yr_wk_lock, upc, tw_fcst, n04w_fcst, n13w_fcst, n26w_fcst,
+  select(brand,
+         yr_wk_lock,
+         upc,
+         tw_fcst,
+         n04w_fcst,
+         n13w_fcst,
+         n26w_fcst,
          n52w_fcst) %>%
   filter(n52w_fcst > 0)
 
@@ -472,7 +643,7 @@ insert_upload_job(
   table = "fcst_locked_isaiah",
   fcst_isaiah,
   billing = project,
-  write_disposition = "WRITE_TRUNCATE"
+  write_disposition = "WRITE_APPEND"
 )
 
 dpm_fcst_lock <- dpm_fcst %>%
@@ -495,6 +666,15 @@ insert_upload_job(
   dataset = "ecomm",
   table = "fcst_locked_dpm",
   dpm_fcst_lock,
+  billing = project,
+  write_disposition = "WRITE_APPEND"
+)
+
+insert_upload_job(
+  project = project,
+  dataset = "ecomm",
+  table = "sales_lxw",
+  hist_l52w_sls,
   billing = project,
   write_disposition = "WRITE_TRUNCATE"
 )
