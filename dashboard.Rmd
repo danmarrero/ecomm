@@ -3,18 +3,96 @@ title: "Planning Dashboard"
 output: 
   flexdashboard::flex_dashboard:
     logo: glasses_logo_white_small.png
+    favicon: glasses_logo_favicon.jpg
     orientation: columns
     vertical_layout: fill
 ---
+
+
 
 ```{r setup, include=FALSE}
 library(flexdashboard)
 ```
 
+Stock
+=======================================================================
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### OOS % by Contribution Code
+
+```{r}
+
+```
+
+### Historical ATP OOS %
+
+```{r}
+
+```
+
+Column {.tabset}
+-----------------------------------------------------------------------
+
+### Top 5 Brands OOS %
+
+```{r}
+
+```
+
+### NPI OOS % by Brand
+
+```{r}
+
+```
+
+Sales
+=======================================================================
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Gross Sales XTD
+
+```{r}
+
+```
+
+### Gross Sales vs LY
+
+```{r}
+
+```
+
+Column {.tabset}
+-----------------------------------------------------------------------
+
+### Gross Sales YTD by Brand
+
+```{r}
+
+```
+
+### Best Sellers
+
+```{r}
+
+```
+
+Forecast
+=======================================================================
+
 Column {data-width=500}
 -----------------------------------------------------------------------
 
-### Chart A
+### Forecast Accuracy - DPM - 4 Week Lag
+
+```{r}
+
+```
+
+### Forecast Accuracy - DPM - 13 Week Lag
 
 ```{r}
 
@@ -23,13 +101,25 @@ Column {data-width=500}
 Column {data-width=500}
 -----------------------------------------------------------------------
 
-### Chart B
+### Forecast Accuracy - isaiah.io - 4 Week Lag
 
 ```{r}
 
 ```
 
-### Chart C
+### Forecast Accuracy - isaiah.io - 13 Week Lag
+
+```{r}
+
+```
+
+Detail
+=======================================================================
+
+Column {data-width=1000}
+-----------------------------------------------------------------------
+
+### UPC Level Detail
 
 ```{r}
 
