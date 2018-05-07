@@ -29,6 +29,7 @@ library(bigrquery)
 library(googleCloudStorageR)
 library(lubridate)
 library(stringr)
+library(scales)
 
 gcs_auth()
 
@@ -79,7 +80,7 @@ detail <- qaf %>%
     COLORE,
     `QUANTITA'`
   ) %>%
-  filter(DATESTCODE == 8460)
+  filter(DATESTCODE == "008460")
 
 sku <- zupc %>%
   select(Material, Dim.value2, Dim.value1, `Grid value`, `Primary UPC`) %>%
@@ -101,18 +102,20 @@ names(cc)[1] <- "UPC"
 names(fcst_isaiah)[3] <- "UPC"
 names(sku2)[1] <- "UPC"
 
-detail <- left_join(detail, stock_avail, by = "UPC")
+detail$UPC <- as.numeric(as.character(detail$UPC))
+sku2$UPC <- as.numeric(as.character(sku2$UPC))
 
+detail <- left_join(detail, stock_avail, by = "UPC")
 detail <- left_join(detail, sku2, by = "UPC")
 
 transit <- transit %>%
-  select(MATNR, J_3ASIZE, ZZSHIPCLOSE, ZZTRNQTY) %>%
-  filter(ZZSHIPCLOSE == "00.00.0000")
+  select(Material, `Grid Value`, `Closure Date`, `Transit Qty`) %>%
+  filter(`Closure Date` == "00.00.0000")
 
 in_transit <- transit %>%
-  unite(SKU2, MATNR, J_3ASIZE, sep = "", remove = FALSE) %>%
+  unite(SKU2, Material, `Grid Value`, sep = "", remove = FALSE) %>%
   group_by(SKU2) %>%
-  summarise(TRANSIT = sum(ZZTRNQTY))
+  summarise(TRANSIT = sum(`Transit Qty`))
 
 detail <- left_join(detail, in_transit, by = "SKU2")
 detail$TRANSIT[is.na(detail$TRANSIT)] <- 0
@@ -133,12 +136,14 @@ detail <- left_join(detail, fcst_isa, by = "UPC")
 detail$cc[is.na(detail$cc)] <- "E"
 
 detail <- detail %>%
-  mutate("MIN" = if_else(detail$cc == "A", 8,
+  mutate("MIN" = if_else(detail$cc == "A", 12,
                  if_else(detail$cc == "B", 7,
-                 if_else(detail$cc == "C", 6,
+                 if_else(detail$cc == "C", 5,
                  if_else(detail$cc == "D", 3,
-                 if_else(detail$cc == "E", 3, 3)))))) %>%
-  mutate("TGT_WOS" = detail$n13w_fcst / 13 * 6)
+                 if_else(detail$cc == "E", 3,
+                 if_else(detail$cc == "ADV", 12,
+                 if_else(detail$cc == "NPI", 12, 3)))))))) %>%
+  mutate("TGT_WOS" = detail$n13w_fcst / 13 * 8)
 
 detail[is.na(detail)] <- 0
 
@@ -151,8 +156,50 @@ detail <- detail[!duplicated(detail$UPC), ]
 
 names(detail) <- toupper(names(detail))
 
+
+# Flag Calculations -------------------------------------------------------
+
+detail <- detail %>%
+  mutate("OOS" = if_else(AVAILABLE <= 2, 1, 0)) %>%
+  mutate("OOS_WITH_TRANSIT" = if_else(AVAILABLE <= 2 & TRANSIT > 0,
+                                      1, 0)) %>%
+  mutate("OOS_NO_TRANSIT" = if_else(AVAILABLE <= 2 & TRANSIT == 0 &
+                                    `QUAL-INSP` == 0,
+                                    1, 0)) %>%
+  mutate("UPC_CNT" = 1)
+
+
+oos_summary <- detail %>%
+  select(CC, UPC_CNT, OOS, OOS_WITH_TRANSIT, OOS_NO_TRANSIT) %>%
+  group_by(CC) %>%
+  summarise(sum(UPC_CNT), sum(OOS), sum(OOS_WITH_TRANSIT), sum(OOS_NO_TRANSIT))
+
+names(oos_summary)[2:5] <- c("UPC_CNT", "OOS", "OOS_WITH_TRANSIT", "OOS_NO_TRANST")
+
+oos_summary <- oos_summary %>%
+  mutate("ATP" = OOS / UPC_CNT) %>%
+  mutate("ITR" = OOS_WITH_TRANSIT / UPC_CNT)
+
+oos_summary$ATP <-  round(oos_summary$ATP, digits = 3)
+oos_summary$ITR <- round(oos_summary$ITR, digits = 3)
+
 # Export ------------------------------------------------------------------
 
 write_csv(detail, "qaf_detail.csv")
+write_csv(oos_summary, "oos_summary.csv")
 
 sum(detail$QAF_REV)
+
+
+
+
+
+
+oos_summary <- read_csv("oos_summary.csv")
+
+oos_summary <- oos_summary %>%
+  select(CC, ATP, ITR)
+
+oos_summary <- oos_summary %>%
+  gather(ATP, ITR, key = "TYPE", value = "OOS")
+

@@ -1,5 +1,5 @@
 # ETL Script
 
-# Extracting from FTP or Local Directory
+# Extracting from FTP
 # Transforming using dplyr
 # Loading into Google Cloud Storage/BigQuery
