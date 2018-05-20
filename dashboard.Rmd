@@ -8,6 +8,12 @@ output:
     vertical_layout: fill
 ---
 
+<style>                     
+.navbar {
+  background-color: #005192;
+  border-color: #005192;
+}
+</style>
 
 
 ```{r setup, include=FALSE}
@@ -17,12 +23,14 @@ library(readxl)
 library(scales)
 library(ggrepel)
 library(plotly)
+library(DT)
 ```
 
 Stock
 =======================================================================
 
-Column {data-width=850}
+
+Column {data-width=500}
 -----------------------------------------------------------------------
 
 ### OOS % by Contribution Code
@@ -31,30 +39,34 @@ Column {data-width=850}
 oos_summary <- read_csv("oos_summary.csv")
 
 oos_summary <- oos_summary %>%
-  select(CC, ATP, ITR)
+  select(CC, ATP, ITR, POOS)
 
 oos_summary <- oos_summary %>%
-  gather(ATP, ITR, key = "TYPE", value = "OOS")
+  gather(ATP, ITR, POOS, key = "TYPE", value = "OOS")
 
 oos_summary$OOS <- oos_summary$OOS * 100
 
 p <- ggplot(data = oos_summary, aes(fill = TYPE, y = OOS, x = CC)) +
-  geom_bar(position = "dodge", stat = "identity") +
+  geom_bar(position = "dodge", stat = "identity", width = 0.85) +
   theme(legend.position = "none") +
-  #scale_y_continuous(limits = c(0, 50)) +
+  scale_y_continuous(limits = c(0, 50)) +
   theme_minimal() +
-  scale_fill_manual("TYPE", values = c("ATP" = "#005193", "ITR" = "#3AAADC")) +
-  geom_text(aes(y = OOS + .5,    # nudge above top of bar
-                label = paste0(OOS, '%')),    # prettify
-                position = position_dodge(width = .9), 
-                size = 3)
+  scale_fill_manual("TYPE", values = c("ATP" = "#005192", "ITR" = "#7FA8C8",
+                                       "POOS" = "#DFE9F1")) #+
+  #geom_text(aes(y = OOS + .9,    # nudge above top of bar
+  #              label = paste0(OOS, '%')),    # prettify
+  #              position = position_dodge(width = .8), 
+  #              size = 2.85)
 
 p <- p + theme(axis.title.x = element_blank(),
                axis.title.y = element_blank(),
-               legend.position = "bottom")
+               legend.position = "bottom"
+               )
+p <- p + ggtitle(paste0("Updated", " ", Sys.Date()))
+p <- p + theme(plot.title = element_text(size = 9))
 
 ggplotly(p) %>%
-  layout(legend = list(orientation = "h", y = -.05, x = .41))
+  layout(legend = list(orientation = "h", y = -.1, x = .0))
 
 ```
 
@@ -67,6 +79,8 @@ hist_oos <-
 oos_plot <- hist_oos %>%
   select(`ATP OOS %`, DATE, CC) %>%
   arrange(desc(`ATP OOS %`))
+
+oos_plot$`ATP OOS %` <- oos_plot$`ATP OOS %` * 100
 
 oos_plot$DATE <- as.Date(as.POSIXct(oos_plot$DATE))
 
@@ -81,7 +95,7 @@ oos_plot$facet = factor(oos_plot$CC,
 p <-
   ggplot(data = oos_plot, aes(x = DATE, y = `ATP OOS %`, group = CC)) +
   geom_line(size = 0.45, color = "#3AAADC") +
-  scale_y_continuous(labels = percent) +
+  #scale_y_continuous(labels = percent) +
   theme(legend.position = "none") +
   theme_bw()
 
@@ -94,14 +108,51 @@ p <- p + facet_wrap(~ facet, nr = 2) +
 
 ggplotly(p)
 
+
 ```
 
-Column {.tabset}
+Column {data-width=500}
 -----------------------------------------------------------------------
 
-### Top 5 Brands OOS %
+### Top 5 Brands ATP OOS % by CC
 
 ```{r}
+brand_summary <- read_csv("brand_summary.csv")
+
+x <- brand_summary %>%
+  select(BRAND, RANK) %>%
+  arrange(desc(RANK)) %>%
+  distinct() %>%
+  select(BRAND)
+
+y <- substr(x$BRAND, start = 1, stop = 10)
+
+brand_summary$CC <- factor(brand_summary$CC, levels = c("E", "D", "C", "B", "A"))
+
+brand_summary$BRAND <- factor(brand_summary$BRAND, levels = y)
+
+brand_summary$ATP <- brand_summary$ATP * 100
+
+b <- ggplot(data = brand_summary, aes(fill = CC, y = ATP, x = BRAND)) +
+  geom_bar(position = "dodge", stat = "identity", width = 0.75) +
+  theme(legend.position = "none") +
+  scale_y_continuous(limits = c(0, 100)) +
+  theme_minimal() +
+  scale_fill_manual("CC", values = c("A" = "#005192", "B" = "#3F7CAD",
+                                       "C" = "#7FA8C8", "D" = "#BFD3E3",
+                                     "E" = "#DFE9F1")) +
+  #geom_text(aes(y = ATP + 5,    # nudge above top of bar
+  #              label = paste0(CC, " - ", ATP, '%')),    # prettify
+  #              position = position_dodge(width = .9), 
+  #              size = 3.5) +
+  coord_flip()
+
+
+b <- b + theme(axis.title.x = element_blank(),
+               axis.title.y = element_blank())
+
+ggplotly(b) %>%
+    layout(showlegend = FALSE)
 
 ```
 
@@ -186,6 +237,77 @@ Column {data-width=1000}
 ### UPC Level Detail
 
 ```{r}
+detail <- read_csv("qaf_detail.csv")
+
+detail <- detail %>%
+select(
+BRAND,
+MODELLO,
+`GRID VALUE`,
+UPC,
+CC,
+AVAILABLE,
+ALLOCATED,
+`QUAL-INSP`,
+TRANSIT,
+L13W_SLS,
+L04W_SLS,
+LW_SLS,
+TW_FCST,
+N04W_FCST,
+N13W_FCST,
+QAF_REV,
+`QUANTITA'`,
+OOS,
+OOS_WITH_TRANSIT,
+POOS
+) %>%
+  filter(UPC != 0)
+
+detail$TW_FCST <- round(detail$TW_FCST, digits = 2)
+detail$N04W_FCST <- round(detail$N04W_FCST, digits = 2)
+detail$N13W_FCST <- round(detail$N13W_FCST, digits = 2)
+
+names(detail)[1] <- c("BRAND")
+names(detail)[2] <- c("MODEL")
+names(detail)[3] <- c("GRID_VALUE")
+names(detail)[5] <- c("CC")
+names(detail)[6] <- c("ATP_QTY")
+names(detail)[7] <- c("ALLOCATED")
+names(detail)[8] <- c("QUAL_INSP")
+names(detail)[9] <- c("TRANSIT")
+names(detail)[16] <- c("QAF_CALC")
+names(detail)[17] <- c("QAF_CURR")
+names(detail)[19] <- c("OOS_ITR")
+
+detail <- detail %>%
+  arrange(desc(L13W_SLS))
+
+#datatable(detail, rownames = FALSE,
+#          extensions = 'Buttons',
+#          options = list(dom = 'Bfrtip',
+#          buttons = c('excel')))
+
+datatable(detail,
+rownames= F,
+    extensions = list("ColReorder" = NULL,
+                      "Buttons" = NULL,
+                      "FixedColumns" = list(leftColumns=1)),
+    options = list(
+                dom = 'BRrlftpi',
+                autoWidth=TRUE,
+                lengthMenu = list(c(10, 50, -1), c('10', '50', 'All')),
+                ColReorder = TRUE,
+                buttons =
+                    list(
+                      extend = 'collection',
+                      buttons = c('csv', 'excel'),
+                      text = 'Download'
+                    ),
+                    I('colvis')
+                  )
+              )
+    
 
 ```
 

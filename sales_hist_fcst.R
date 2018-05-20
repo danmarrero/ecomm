@@ -34,11 +34,18 @@ gcs_auth()
 
 # 02 - Import Data --------------------------------------------------------
 
-gcs_get_object("data/raw_data/dpm_hist_fcst.xlsx",
-               saveToDisk = "dpm_hist_fcst.xlsx",
+gcs_get_object("dpm_hist_fcst.csv",
+               saveToDisk = "dpm_hist_fcst.csv",
                overwrite = TRUE)
 
-l52w_sls_dpm <- read_excel("dpm_hist_fcst.xlsx")
+l52w_sls_dpm <- read_csv(
+  "dpm_hist_fcst.csv",
+  col_types = cols(
+    `Comm Unconsumed Fcst` = col_number(),
+    `Stat Unconsumed Fcst` = col_number()
+  ),
+  locale = locale(encoding = "ISO-8859-1")
+)
 
 sql <- "SELECT   f_yr_week, id
 FROM     [ecomm-197702:ecomm.time_dim]
@@ -46,7 +53,29 @@ GROUP BY f_yr_week, id"
 
 hist_wk <- query_exec(sql, project = project)
 
+sql <-
+  paste("SELECT * FROM [ecomm-197702:ecomm.fcst_locked_isaiah] WHERE yr_wk_lock = ",
+        x ,
+        "",
+        sep = "")
+fcst_isaiah <- query_exec(sql, project = project)
+
+sql <-
+  paste("SELECT * FROM [ecomm-197702:ecomm.fcst_locked_dpm] WHERE yr_wk_lock = ",
+        x ,
+        "",
+        sep = "")
+fcst_dpm <- query_exec(sql, project = project)
+
+
+
+
+
+
 # 03 - Transform Data -----------------------------------------------------
+
+l52w_sls_dpm <- l52w_sls_dpm %>%
+  select(-X1)
 
 names(l52w_sls_dpm)[1] <- "DPT"
 names(l52w_sls_dpm)[2] <- "F_YR"

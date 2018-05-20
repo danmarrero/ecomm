@@ -35,10 +35,10 @@ gcs_auth()
 
 # 02 - Import Data --------------------------------------------------------
 
-stock <- gcs_get_object("stock.csv")
-qaf <- gcs_get_object("qaf.csv")
-transit <- gcs_get_object("transit.csv")
-zupc <- gcs_get_object("zupc_ago.csv")
+stock <- gcs_get_object("stock.csv", bucket = "ecomm_lux")
+qaf <- gcs_get_object("qaf.csv", bucket = "ecomm_lux")
+transit <- gcs_get_object("transit.csv", bucket = "ecomm_lux")
+zupc <- gcs_get_object("zupc_ago.csv", bucket = "ecomm_lux")
 
 sql <- "SELECT * FROM [ecomm-197702:ecomm.time_dim]"
 time_dim <- query_exec(sql, project = project)
@@ -161,32 +161,60 @@ names(detail) <- toupper(names(detail))
 
 detail <- detail %>%
   mutate("OOS" = if_else(AVAILABLE <= 2, 1, 0)) %>%
-  mutate("OOS_WITH_TRANSIT" = if_else(AVAILABLE <= 2 & TRANSIT > 0,
-                                      1, 0)) %>%
-  mutate("OOS_NO_TRANSIT" = if_else(AVAILABLE <= 2 & TRANSIT == 0 &
-                                    `QUAL-INSP` == 0,
+  mutate("OOS_WITH_TRANSIT" = if_else(AVAILABLE + TRANSIT + `QUAL-INSP` > 2,
+                                      0, 1)) %>%
+  mutate("POOS" = if_else(OOS == 0 & AVAILABLE + TRANSIT + `QUAL-INSP` < N04W_FCST / 2,
                                     1, 0)) %>%
   mutate("UPC_CNT" = 1)
 
 
 oos_summary <- detail %>%
-  select(CC, UPC_CNT, OOS, OOS_WITH_TRANSIT, OOS_NO_TRANSIT) %>%
+  select(CC, UPC_CNT, OOS, OOS_WITH_TRANSIT, POOS) %>%
   group_by(CC) %>%
-  summarise(sum(UPC_CNT), sum(OOS), sum(OOS_WITH_TRANSIT), sum(OOS_NO_TRANSIT))
+  summarise(sum(UPC_CNT), sum(OOS), sum(OOS_WITH_TRANSIT), sum(POOS))
 
-names(oos_summary)[2:5] <- c("UPC_CNT", "OOS", "OOS_WITH_TRANSIT", "OOS_NO_TRANST")
+names(oos_summary)[2:5] <- c("UPC_CNT", "OOS", "OOS_WITH_TRANSIT", "POOS")
 
 oos_summary <- oos_summary %>%
   mutate("ATP" = OOS / UPC_CNT) %>%
-  mutate("ITR" = OOS_WITH_TRANSIT / UPC_CNT)
+  mutate("ITR" = OOS_WITH_TRANSIT / UPC_CNT) %>%
+  mutate("POOS" = POOS / UPC_CNT)
 
-oos_summary$ATP <-  round(oos_summary$ATP, digits = 3)
+oos_summary$ATP <-round(oos_summary$ATP, digits = 3)
 oos_summary$ITR <- round(oos_summary$ITR, digits = 3)
+oos_summary$POOS <- round(oos_summary$POOS, digits = 3)
+
+brand_summary <- detail %>%
+  select(BRAND, CC, UPC_CNT, OOS) %>%
+  dplyr::group_by(BRAND, CC) %>%
+  summarise(sum(UPC_CNT), sum(OOS))
+
+names(brand_summary)[3:4] <- c("UPC_CNT", "OOS")
+
+brand_summary <- brand_summary %>%
+  mutate("ATP" = OOS / UPC_CNT)
+
+brand_summary$ATP <- round(brand_summary$ATP, digits = 3)
+
+top_5_brands <- detail %>%
+  select(BRAND, L13W_SLS) %>%
+  group_by(BRAND) %>%
+  summarise(L13W = sum(L13W_SLS)) %>%
+  arrange(desc(L13W)) %>%
+  mutate(RANK = row_number())
+
+brand_summary <- left_join(brand_summary, top_5_brands, by = "BRAND")
+
+brand_summary <- brand_summary %>%
+  filter(RANK < 6) %>%
+  select(BRAND, CC, ATP, RANK) %>%
+  arrange(RANK)
 
 # Export ------------------------------------------------------------------
 
 write_csv(detail, "qaf_detail.csv")
 write_csv(oos_summary, "oos_summary.csv")
+write_csv(brand_summary, "brand_summary.csv")
 
 sum(detail$QAF_REV)
 
@@ -195,11 +223,11 @@ sum(detail$QAF_REV)
 
 
 
-oos_summary <- read_csv("oos_summary.csv")
+#oos_summary <- read_csv("oos_summary.csv")
 
-oos_summary <- oos_summary %>%
-  select(CC, ATP, ITR)
+#oos_summary <- oos_summary %>%
+#  select(CC, ATP, ITR)
 
-oos_summary <- oos_summary %>%
-  gather(ATP, ITR, key = "TYPE", value = "OOS")
+#oos_summary <- oos_summary %>%
+#  gather(ATP, ITR, key = "TYPE", value = "OOS")
 
