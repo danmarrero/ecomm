@@ -64,11 +64,17 @@ p <- p + theme(axis.title.x = element_blank(),
                )
 p <- p + ggtitle(paste0("Updated", " ", Sys.Date()))
 p <- p + theme(plot.title = element_text(size = 9))
+#p <- p + theme(plot.title = element_text(hjust = -1, vjust = 1))
 
 ggplotly(p) %>%
   layout(legend = list(orientation = "h", y = -.1, x = .0))
 
 ```
+
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
 
 ### Historical ATP OOS %
 
@@ -101,8 +107,9 @@ p <-
 
 p <- p + facet_wrap(~ facet, nr = 2) +
   theme(strip.background = element_rect(fill = "#005192"),
-        strip.text = element_text(size = 10,
-                                  color = "white"),
+        strip.text = element_text(size = 11,
+                                  color = "white",
+                                  vjust = 0.5),
         axis.title.x = element_blank(),
         axis.title.y = element_blank())
 
@@ -111,10 +118,13 @@ ggplotly(p)
 
 ```
 
+Brand
+=======================================================================
+
 Column {data-width=500}
 -----------------------------------------------------------------------
 
-### Top 5 Brands ATP OOS % by CC
+### Top 5 Brand OOS % by Contribution Code
 
 ```{r}
 brand_summary <- read_csv("brand_summary.csv")
@@ -153,80 +163,24 @@ b <- b + theme(axis.title.x = element_blank(),
 
 ggplotly(b) %>%
     layout(showlegend = FALSE)
-
 ```
 
-### NPI OOS % by Brand
-
-```{r}
-
-```
-
-Sales
-=======================================================================
-
-Column {data-width=650}
------------------------------------------------------------------------
-
-### Gross Sales XTD
-
-```{r}
-
-```
-
-### Gross Sales vs LY
-
-```{r}
-
-```
 
 Column {.tabset}
 -----------------------------------------------------------------------
 
-### Gross Sales YTD by Brand
+### Landing Page OOS %
 
 ```{r}
 
 ```
 
-### Best Sellers
+### NPI Stock by Brand
 
 ```{r}
 
 ```
 
-Forecast
-=======================================================================
-
-Column {data-width=500}
------------------------------------------------------------------------
-
-### Forecast Accuracy - DPM - 4 Week Lag
-
-```{r}
-
-```
-
-### Forecast Accuracy - DPM - 13 Week Lag
-
-```{r}
-
-```
-
-Column {data-width=500}
------------------------------------------------------------------------
-
-### Forecast Accuracy - isaiah.io - 4 Week Lag
-
-```{r}
-
-```
-
-### Forecast Accuracy - isaiah.io - 13 Week Lag
-
-```{r}
-
-```
 
 Detail
 =======================================================================
@@ -271,7 +225,8 @@ detail$N13W_FCST <- round(detail$N13W_FCST, digits = 2)
 names(detail)[1] <- c("BRAND")
 names(detail)[2] <- c("MODEL")
 names(detail)[3] <- c("GRID_VALUE")
-names(detail)[5] <- c("CC")
+names(detail)[4] <- c("EAN_UPC")
+names(detail)[5] <- c("CONTR_CODE")
 names(detail)[6] <- c("ATP_QTY")
 names(detail)[7] <- c("ALLOCATED")
 names(detail)[8] <- c("QUAL_INSP")
@@ -288,26 +243,29 @@ detail <- detail %>%
 #          options = list(dom = 'Bfrtip',
 #          buttons = c('excel')))
 
-datatable(detail,
-rownames= F,
-    extensions = list("ColReorder" = NULL,
-                      "Buttons" = NULL,
-                      "FixedColumns" = list(leftColumns=1)),
-    options = list(
-                dom = 'BRrlftpi',
-                autoWidth=TRUE,
-                lengthMenu = list(c(10, 50, -1), c('10', '50', 'All')),
-                ColReorder = TRUE,
-                buttons =
-                    list(
-                      extend = 'collection',
-                      buttons = c('csv', 'excel'),
-                      text = 'Download'
-                    ),
-                    I('colvis')
-                  )
-              )
-    
+datatable(
+  detail,
+  rownames = F,
+  extensions = list(
+  "ColReorder" = NULL,
+  "Buttons" = NULL,
+  "FixedColumns" = list(leftColumns = 1)
+  ),
+  options = list(
+  dom = 'BRrlftpi',
+  autoWidth = TRUE,
+  lengthMenu = list(c(10, 50,-1), c('10', '50', 'All')),
+  ColReorder = TRUE,
+  scrollX = TRUE,
+  fixedColumns = list(leftColumns = 4),
+  buttons =
+  list(
+  extend = 'collection',
+  buttons = c('csv', 'excel'),
+  text = 'Download'
+  ),
+  I('colvis')
+  ))
 
 ```
 

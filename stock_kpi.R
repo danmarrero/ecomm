@@ -156,6 +156,7 @@ detail <- detail[!duplicated(detail$UPC), ]
 
 names(detail) <- toupper(names(detail))
 
+detail[is.na(detail)] <- 0
 
 # Flag Calculations -------------------------------------------------------
 
