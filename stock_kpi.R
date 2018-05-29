@@ -39,6 +39,7 @@ stock <- gcs_get_object("stock.csv", bucket = "ecomm_lux")
 qaf <- gcs_get_object("qaf.csv", bucket = "ecomm_lux")
 transit <- gcs_get_object("transit.csv", bucket = "ecomm_lux")
 zupc <- gcs_get_object("zupc_ago.csv", bucket = "ecomm_lux")
+hist_oos <- gcs_get_object("hist_oos.csv", bucket = "ecomm_lux")
 
 sql <- "SELECT * FROM [ecomm-197702:ecomm.time_dim]"
 time_dim <- query_exec(sql, project = project)
@@ -67,6 +68,12 @@ cc <- query_exec(sql, project = project)
 
 
 # Transform Data ----------------------------------------------------------
+
+hist_oos <- hist_oos %>%
+  select(-X1)
+
+hist_oos <- hist_oos %>%
+  filter(Date != Sys.Date())
 
 detail <- qaf %>%
   select(
@@ -174,16 +181,45 @@ oos_summary <- detail %>%
   group_by(CC) %>%
   summarise(sum(UPC_CNT), sum(OOS), sum(OOS_WITH_TRANSIT), sum(POOS))
 
-names(oos_summary)[2:5] <- c("UPC_CNT", "OOS", "OOS_WITH_TRANSIT", "POOS")
+names(oos_summary)[2:5] <- c("UPC_CNT", "OOS", "OOS_WITH_TRANSIT", "POOS_CNT")
 
 oos_summary <- oos_summary %>%
   mutate("ATP" = OOS / UPC_CNT) %>%
   mutate("ITR" = OOS_WITH_TRANSIT / UPC_CNT) %>%
-  mutate("POOS" = POOS / UPC_CNT)
+  mutate("POOS" = POOS_CNT / UPC_CNT)
 
 oos_summary$ATP <-round(oos_summary$ATP, digits = 3)
 oos_summary$ITR <- round(oos_summary$ITR, digits = 3)
 oos_summary$POOS <- round(oos_summary$POOS, digits = 3)
+
+oos_total <- oos_summary
+
+oos_total <- oos_total %>%
+  mutate(TTL_UPC = sum(UPC_CNT)) %>%
+  mutate(TTL_OOS = sum(OOS)) %>%
+  mutate(TTL_ITR = sum(OOS_WITH_TRANSIT)) %>%
+  mutate(TTL_POOS = sum(POOS_CNT))
+
+oos_total <- oos_total %>%
+  mutate(TTL_OOS_PCT = TTL_OOS / TTL_UPC) %>%
+  mutate(TTL_ITR_PCT = TTL_ITR / TTL_UPC) %>%
+  mutate(TTL_POOS_PCT = TTL_POOS / TTL_UPC) %>%
+  mutate(CC = "Grand Total")
+
+oos_total$TTL_OOS_PCT <- round(oos_total$TTL_OOS_PCT, digits = 3)
+oos_total$TTL_ITR_PCT <- round(oos_total$TTL_ITR_PCT, digits = 3)
+oos_total$TTL_POOS_PCT <- round(oos_total$TTL_POOS_PCT, digits = 3)
+
+oos_total <- oos_total %>%
+  select(CC, TTL_UPC, TTL_OOS, TTL_ITR, TTL_POOS, TTL_OOS_PCT, TTL_ITR_PCT,
+         TTL_POOS_PCT) %>%
+  distinct()
+
+names(oos_total)[2:8] <- c("UPC_CNT", "OOS", "OOS_WITH_TRANSIT", "POOS_CNT",
+                           "ATP", "ITR", "POOS")
+
+oos_summary <- bind_rows(oos_summary, oos_total)
+
 
 brand_summary <- detail %>%
   select(BRAND, CC, UPC_CNT, OOS) %>%
@@ -211,11 +247,49 @@ brand_summary <- brand_summary %>%
   select(BRAND, CC, ATP, RANK) %>%
   arrange(RANK)
 
+
+# Historical OOS Summary --------------------------------------------------
+
+oos_today <- oos_summary %>%
+  select(CC, ATP) %>%
+  mutate(DATE = Sys.Date()) %>%
+  select(DATE, CC, ATP)
+
+oos_total_today <- oos_summary %>%
+  select(UPC_CNT, OOS) %>% 
+  mutate(GROUP = 1) %>%
+  group_by(GROUP, TTL_UPC = sum(UPC_CNT), TTL_OOS = sum(OOS))
+
+oos_total_today <- oos_total_today %>%
+  select(TTL_UPC, TTL_OOS) %>%
+  distinct()
+
+oos_total_today <- oos_total_today %>%
+  mutate(TTL_OOS_PCT = TTL_OOS / TTL_UPC) %>%
+  mutate(DATE = Sys.Date()) %>%
+  mutate(CC = "Grand Total")
+
+oos_total_today <-  as.data.frame(oos_total_today)
+
+oos_total_today <- oos_total_today %>%
+  select(DATE, CC, TTL_OOS_PCT)
+
+oos_total_today$TTL_OOS_PCT <- round(oos_total_today$TTL_OOS_PCT, digits = 3)
+
+names(oos_total_today)[3] <- "ATP OOS %"
+names(oos_today)[3] <- "ATP OOS %"
+
+oos_today <- bind_rows(oos_today, oos_total_today)
+
+hist_oos <- bind_rows(hist_oos, oos_today)
+
 # Export ------------------------------------------------------------------
 
 write_csv(detail, "qaf_detail.csv")
 write_csv(oos_summary, "oos_summary.csv")
 write_csv(brand_summary, "brand_summary.csv")
+write_csv(hist_oos, "hist_oos.csv")
+
 
 sum(detail$QAF_REV)
 

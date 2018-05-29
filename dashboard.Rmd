@@ -80,7 +80,7 @@ Column {data-width=500}
 
 ```{r}
 hist_oos <-
-  read_excel("hist_oos_gl.xlsx")
+  read_csv("hist_oos.csv")
 
 oos_plot <- hist_oos %>%
   select(`ATP OOS %`, DATE, CC) %>%
