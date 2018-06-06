@@ -87,7 +87,7 @@ detail <- qaf %>%
     COLORE,
     `QUANTITA'`
   ) %>%
-  filter(DATESTCODE == "008460")
+  filter(DATESTCODE == 8460)
 
 sku <- zupc %>%
   select(Material, Dim.value2, Dim.value1, `Grid value`, `Primary UPC`) %>%
@@ -283,6 +283,9 @@ oos_today <- bind_rows(oos_today, oos_total_today)
 
 hist_oos <- bind_rows(hist_oos, oos_today)
 
+hist_oos <- hist_oos %>%
+  distinct()
+
 # Export ------------------------------------------------------------------
 
 write_csv(detail, "qaf_detail.csv")
@@ -290,6 +293,7 @@ write_csv(oos_summary, "oos_summary.csv")
 write_csv(brand_summary, "brand_summary.csv")
 write_csv(hist_oos, "hist_oos.csv")
 
+gcs_upload("hist_oos.csv", gcs_global_bucket(bucket))
 
 sum(detail$QAF_REV)
 
