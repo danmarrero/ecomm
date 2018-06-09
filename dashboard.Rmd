@@ -46,10 +46,19 @@ oos_summary <- oos_summary %>%
 
 oos_summary$OOS <- oos_summary$OOS * 100
 
+oos_summary$facet = factor(oos_summary$CC,
+                           levels = c("A",
+                                      "B",
+                                      "C",
+                                      "D",
+                                      "E",
+                                      "NPI",
+                                      "Grand Total"))
+
 p <- ggplot(data = oos_summary, aes(fill = TYPE, y = OOS, x = CC)) +
   geom_bar(position = "dodge", stat = "identity", width = 0.85) +
   theme(legend.position = "none") +
-  scale_y_continuous(limits = c(0, 50)) +
+  scale_y_continuous(limits = c(0, 100)) +
   theme_minimal() +
   scale_fill_manual("TYPE", values = c("ATP" = "#005192", "ITR" = "#7FA8C8",
                                        "POOS" = "#DFE9F1")) #+
@@ -84,7 +93,8 @@ hist_oos <-
 
 oos_plot <- hist_oos %>%
   select(`ATP OOS %`, DATE, CC) %>%
-  arrange(desc(`ATP OOS %`))
+  arrange(desc(`ATP OOS %`)) %>%
+  filter(CC != "NPI")
 
 oos_plot$`ATP OOS %` <- oos_plot$`ATP OOS %` * 100
 
@@ -96,6 +106,7 @@ oos_plot$facet = factor(oos_plot$CC,
                                    "C",
                                    "D",
                                    "E",
+                                   "NPI",
                                    "Grand Total"))
 
 p <-
@@ -137,7 +148,7 @@ x <- brand_summary %>%
 
 y <- substr(x$BRAND, start = 1, stop = 10)
 
-brand_summary$CC <- factor(brand_summary$CC, levels = c("E", "D", "C", "B", "A"))
+brand_summary$CC <- factor(brand_summary$CC, levels = c("NPI", "E", "D", "C", "B", "A"))
 
 brand_summary$BRAND <- factor(brand_summary$BRAND, levels = y)
 
@@ -150,7 +161,7 @@ b <- ggplot(data = brand_summary, aes(fill = CC, y = ATP, x = BRAND)) +
   theme_minimal() +
   scale_fill_manual("CC", values = c("A" = "#005192", "B" = "#3F7CAD",
                                        "C" = "#7FA8C8", "D" = "#BFD3E3",
-                                     "E" = "#DFE9F1")) +
+                                     "E" = "#DFE9F1", "NPI" = "#005192")) +
   #geom_text(aes(y = ATP + 5,    # nudge above top of bar
   #              label = paste0(CC, " - ", ATP, '%')),    # prettify
   #              position = position_dodge(width = .9), 
@@ -214,7 +225,8 @@ QAF_REV,
 `QUANTITA'`,
 OOS,
 OOS_WITH_TRANSIT,
-POOS
+POOS,
+REL
 ) %>%
   filter(UPC != 0)
 

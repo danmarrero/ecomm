@@ -40,6 +40,7 @@ qaf <- gcs_get_object("qaf.csv", bucket = "ecomm_lux")
 transit <- gcs_get_object("transit.csv", bucket = "ecomm_lux")
 zupc <- gcs_get_object("zupc_ago.csv", bucket = "ecomm_lux")
 hist_oos <- gcs_get_object("hist_oos.csv", bucket = "ecomm_lux")
+release <- gcs_get_object("release.csv", bucket = "ecomm_lux")
 
 sql <- "SELECT * FROM [ecomm-197702:ecomm.time_dim]"
 time_dim <- query_exec(sql, project = project)
@@ -73,7 +74,7 @@ hist_oos <- hist_oos %>%
   select(-X1)
 
 hist_oos <- hist_oos %>%
-  filter(Date != Sys.Date())
+  filter(DATE != Sys.Date())
 
 detail <- qaf %>%
   select(
@@ -141,6 +142,21 @@ detail <- left_join(detail, sales_lxw, by = "UPC")
 detail <- left_join(detail, fcst_isa, by = "UPC")
 
 detail$cc[is.na(detail$cc)] <- "E"
+
+release <- release %>%
+  select(-X1)
+
+detail <- left_join(detail, release, by = "UPC")
+
+detail <- detail %>%
+  filter(!is.na(UPC))
+
+#oo_stock_new$Stock_Avail[oo_stock_new$Stock_Avail < 0] <- 0
+
+detail$cc[detail$REL == "NPI"] <- "NPI"
+
+#detail <- detail %>%
+#  mutate(cc_new = if_else(detail$REL =))
 
 detail <- detail %>%
   mutate("MIN" = if_else(detail$cc == "A", 12,
