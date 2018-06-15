@@ -29,8 +29,40 @@ library(DT)
 Stock
 =======================================================================
 
+Column {data-width=200}
+-----------------------------------------------------------------------
 
-Column {data-width=500}
+### Grand Total ATP OOS %
+
+```{r}
+rate <- 1.5
+gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
+  success = c(0, 9), warning = c(10, 29), danger = c(30, 100)
+))
+```
+
+### Grand Total ATP + ITR OOS %
+
+```{r}
+rate <- 0.8
+gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
+  success = c(0, 9), warning = c(10, 29), danger = c(30, 100)
+))
+```
+
+
+### NPI ATP OOS %
+
+```{r}
+rate <- 27.3
+gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
+  success = c(0, 9), warning = c(10, 29), danger = c(30, 100)
+))
+```
+
+
+
+Column {data-width=400}
 -----------------------------------------------------------------------
 
 ### OOS % by Contribution Code
@@ -81,11 +113,11 @@ ggplotly(p) %>%
 ```
 
 
-Column {data-width=500}
+Column {data-width=400}
 -----------------------------------------------------------------------
 
 
-### Historical ATP OOS %
+### Historical ATP OOS % by Contribution Code
 
 ```{r}
 hist_oos <-
@@ -116,11 +148,12 @@ p <-
   theme(legend.position = "none") +
   theme_bw()
 
-p <- p + facet_wrap(~ facet, nr = 2) +
+p <- p + facet_wrap(~ facet, nr = 3) +
   theme(strip.background = element_rect(fill = "#005192"),
-        strip.text = element_text(size = 11,
+        strip.text = element_text(#size = 10,
                                   color = "white",
-                                  vjust = 0.5),
+                                  vjust = 0.5,
+                                  hjust = 0.5),
         axis.title.x = element_blank(),
         axis.title.y = element_blank())
 
@@ -135,7 +168,7 @@ Brand
 Column {data-width=500}
 -----------------------------------------------------------------------
 
-### Top 5 Brand OOS % by Contribution Code
+### Total OOS % by Brand
 
 ```{r}
 brand_summary <- read_csv("brand_summary.csv")
@@ -148,20 +181,16 @@ x <- brand_summary %>%
 
 y <- substr(x$BRAND, start = 1, stop = 10)
 
-brand_summary$CC <- factor(brand_summary$CC, levels = c("NPI", "E", "D", "C", "B", "A"))
-
 brand_summary$BRAND <- factor(brand_summary$BRAND, levels = y)
 
 brand_summary$ATP <- brand_summary$ATP * 100
 
-b <- ggplot(data = brand_summary, aes(fill = CC, y = ATP, x = BRAND)) +
+b <- ggplot(data = brand_summary, aes(fill = "OOS", y = ATP, x = BRAND)) +
   geom_bar(position = "dodge", stat = "identity", width = 0.75) +
   theme(legend.position = "none") +
   scale_y_continuous(limits = c(0, 100)) +
   theme_minimal() +
-  scale_fill_manual("CC", values = c("A" = "#005192", "B" = "#3F7CAD",
-                                       "C" = "#7FA8C8", "D" = "#BFD3E3",
-                                     "E" = "#DFE9F1", "NPI" = "#005192")) +
+  scale_fill_manual(values = c("#005192")) +
   #geom_text(aes(y = ATP + 5,    # nudge above top of bar
   #              label = paste0(CC, " - ", ATP, '%')),    # prettify
   #              position = position_dodge(width = .9), 
@@ -177,19 +206,44 @@ ggplotly(b) %>%
 ```
 
 
-Column {.tabset}
+Column {data-width=500}
 -----------------------------------------------------------------------
 
-### Landing Page OOS %
+### NPI OOS % by Brand
 
 ```{r}
+npi_summary <- read_csv("npi_summary.csv")
 
-```
+x <- npi_summary %>%
+  select(BRAND, RANK) %>%
+  arrange(desc(RANK)) %>%
+  distinct() %>%
+  select(BRAND)
 
-### NPI Stock by Brand
+y <- substr(x$BRAND, start = 1, stop = 10)
 
-```{r}
+npi_summary$BRAND <- factor(npi_summary$BRAND, levels = y)
 
+npi_summary$ATP <- npi_summary$ATP * 100
+
+b <- ggplot(data = npi_summary, aes(fill = "OOS", y = ATP, x = BRAND)) +
+  geom_bar(position = "dodge", stat = "identity", width = 0.75) +
+  theme(legend.position = "none") +
+  scale_y_continuous(limits = c(0, 100)) +
+  theme_minimal() +
+  scale_fill_manual(values = c("#005192")) +
+  #geom_text(aes(y = ATP + 5,    # nudge above top of bar
+  #              label = paste0(CC, " - ", ATP, '%')),    # prettify
+  #              position = position_dodge(width = .9), 
+  #              size = 3.5) +
+  coord_flip()
+
+
+b <- b + theme(axis.title.x = element_blank(),
+               axis.title.y = element_blank())
+
+ggplotly(b) %>%
+    layout(showlegend = FALSE)
 ```
 
 

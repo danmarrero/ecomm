@@ -35,4 +35,5 @@ gcs_auth()
 
 # Load Data ---------------------------------------------------------------
 
-gcs_upload("dashboard.html", gcs_global_bucket(bucket))
+gcs_upload("gl-dashboard.html", gcs_global_bucket(bucket), type = 'text/html')
+gcs_upload("dashboard.html", gcs_global_bucket(bucket), type = 'text/html')

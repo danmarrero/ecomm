@@ -37,7 +37,8 @@ hist_oos <-
 
 oos_plot <- hist_oos %>%
   select(`ATP OOS %`, DATE, CC) %>%
-  arrange(desc(`ATP OOS %`))
+  arrange(desc(`ATP OOS %`)) %>%
+  filter(CC != "NPI")
 
 #oos_plot$`ATP OOS %` <- oos_plot$`ATP OOS %` * 100
 

@@ -67,6 +67,7 @@ fcst_dpm <- query_exec(sql, project = project)
 sql <- "SELECT * FROM [ecomm-197702:ecomm.cc_dim]"
 cc <- query_exec(sql, project = project)
 
+#hist_oos <- read_csv("hist_oos.csv")
 
 # Transform Data ----------------------------------------------------------
 
@@ -208,7 +209,8 @@ oos_summary$ATP <-round(oos_summary$ATP, digits = 3)
 oos_summary$ITR <- round(oos_summary$ITR, digits = 3)
 oos_summary$POOS <- round(oos_summary$POOS, digits = 3)
 
-oos_total <- oos_summary
+oos_total <- oos_summary %>%
+  filter(CC != "NPI")
 
 oos_total <- oos_total %>%
   mutate(TTL_UPC = sum(UPC_CNT)) %>%
@@ -238,11 +240,12 @@ oos_summary <- bind_rows(oos_summary, oos_total)
 
 
 brand_summary <- detail %>%
-  select(BRAND, CC, UPC_CNT, OOS) %>%
-  dplyr::group_by(BRAND, CC) %>%
+  filter(REL != "NPI") %>%
+  select(BRAND, UPC_CNT, OOS) %>%
+  dplyr::group_by(BRAND) %>%
   summarise(sum(UPC_CNT), sum(OOS))
 
-names(brand_summary)[3:4] <- c("UPC_CNT", "OOS")
+names(brand_summary)[2:3] <- c("UPC_CNT", "OOS")
 
 brand_summary <- brand_summary %>%
   mutate("ATP" = OOS / UPC_CNT)
@@ -262,6 +265,28 @@ brand_summary <- brand_summary %>%
   filter(RANK < 6) %>%
   select(BRAND, CC, ATP, RANK) %>%
   arrange(RANK)
+
+
+npi_summary <- detail %>%
+  filter(REL == "NPI") %>%
+  select(BRAND, UPC_CNT, OOS) %>%
+  dplyr::group_by(BRAND) %>%
+  summarise(sum(UPC_CNT), sum(OOS))
+
+names(npi_summary)[2:3] <- c("UPC_CNT", "OOS")
+
+npi_summary <- npi_summary %>%
+  mutate("ATP" = OOS / UPC_CNT)
+
+npi_summary$ATP <- round(npi_summary$ATP, digits = 3)
+
+npi_summary <- left_join(npi_summary, top_5_brands, by = "BRAND")
+
+npi_summary <- npi_summary %>%
+  filter(RANK < 6) %>%
+  select(BRAND, CC, ATP, RANK) %>%
+  arrange(RANK)
+  
 
 
 # Historical OOS Summary --------------------------------------------------
@@ -295,11 +320,12 @@ oos_total_today$TTL_OOS_PCT <- round(oos_total_today$TTL_OOS_PCT, digits = 3)
 names(oos_total_today)[3] <- "ATP OOS %"
 names(oos_today)[3] <- "ATP OOS %"
 
-oos_today <- bind_rows(oos_today, oos_total_today)
+#oos_today <- bind_rows(oos_today, oos_total_today)
 
 hist_oos <- bind_rows(hist_oos, oos_today)
 
 hist_oos <- hist_oos %>%
+  select(DATE, CC, `ATP OOS %`) %>%
   distinct()
 
 # Export ------------------------------------------------------------------
@@ -307,6 +333,7 @@ hist_oos <- hist_oos %>%
 write_csv(detail, "qaf_detail.csv")
 write_csv(oos_summary, "oos_summary.csv")
 write_csv(brand_summary, "brand_summary.csv")
+write_csv(npi_summary, "npi_summary.csv")
 write_csv(hist_oos, "hist_oos.csv")
 
 gcs_upload("hist_oos.csv", gcs_global_bucket(bucket))
