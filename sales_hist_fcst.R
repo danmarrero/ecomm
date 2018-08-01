@@ -1,4 +1,4 @@
-# Sales - Historical/Forecast
+# Glasses.com N52W Demand Forecast
 
 # 01 - Load Packages, Global Variables & Options --------------------------
 
@@ -39,12 +39,12 @@ gcs_get_object("dpm_hist_fcst.csv",
                overwrite = TRUE)
 
 l52w_sls_dpm <- read_csv(
-  "dpm_hist_fcst.csv",
-  col_types = cols(
-    `Comm Unconsumed Fcst` = col_number(),
-    `Stat Unconsumed Fcst` = col_number()
-  ),
-  locale = locale(encoding = "ISO-8859-1")
+  "dpm_hist_fcst.csv"#,
+#  col_types = cols(
+#    `Comm Unconsumed Fcst` = col_number(),
+#    `Stat Unconsumed Fcst` = col_number()
+#  ),
+#  locale = locale(encoding = "ISO-8859-1")
 )
 
 sql <- "SELECT   f_yr_week, id
@@ -52,24 +52,6 @@ FROM     [ecomm-197702:ecomm.time_dim]
 GROUP BY f_yr_week, id"
 
 hist_wk <- query_exec(sql, project = project)
-
-sql <-
-  paste("SELECT * FROM [ecomm-197702:ecomm.fcst_locked_isaiah] WHERE yr_wk_lock = ",
-        x ,
-        "",
-        sep = "")
-fcst_isaiah <- query_exec(sql, project = project)
-
-sql <-
-  paste("SELECT * FROM [ecomm-197702:ecomm.fcst_locked_dpm] WHERE yr_wk_lock = ",
-        x ,
-        "",
-        sep = "")
-fcst_dpm <- query_exec(sql, project = project)
-
-
-
-
 
 
 # 03 - Transform Data -----------------------------------------------------
@@ -80,10 +62,11 @@ l52w_sls_dpm <- l52w_sls_dpm %>%
 names(l52w_sls_dpm)[1] <- "DPT"
 names(l52w_sls_dpm)[2] <- "F_YR"
 names(l52w_sls_dpm)[3] <- "F_WK"
-names(l52w_sls_dpm)[10] <- "CL_NME"
-names(l52w_sls_dpm)[23] <- "SKU_NBR"
-names(l52w_sls_dpm)[26] <- "SLS_U"
-names(l52w_sls_dpm)[32] <- "FCST_DPM"
+names(l52w_sls_dpm)[4] <- "CL_NME"
+names(l52w_sls_dpm)[5] <- "SKU_NBR"
+names(l52w_sls_dpm)[6] <- "SLS_U"
+names(l52w_sls_dpm)[7] <- "FCST_DPM"
+
 names(hist_wk)[1] <- "F_YR_WK"
 names(hist_wk)[2] <- "HIST_WK"
 
@@ -116,9 +99,6 @@ dpm_fcst <- left_join(dpm_fcst, hist_wk, by = "F_YR_WK")
 
 dpm_fcst <- dpm_fcst %>%
   filter(is.na(HIST_WK))
-
-
-# 03 - Model --------------------------------------------------------------
 
 l52w_sls_select <-
   select(l52w_sls, F_YR, F_WK, CL_NME, DPT, SKU_NBR,
@@ -270,6 +250,8 @@ names(l17w_sls_cast)[19:35] <-
     "IND_17"
   )
 
+# 04 - Model --------------------------------------------------------------
+
 # Holt Winters Damped Trend Multiplicative Seasonlity Model
 
 # Train & Optimize Model
@@ -344,6 +326,8 @@ hwdtms <- function(a = 0.1,
   return(abs_e)
 }
 
+# Optimize Model
+
 for (i in 1:nrow(l17w_sls_cast)) {
   iter_df <- l17w_sls_cast[i, ]
   parameters <- optim(
@@ -351,7 +335,7 @@ for (i in 1:nrow(l17w_sls_cast)) {
     hwdtms,
     method = "L-BFGS-B",
     lower = c(0.1),
-    upper = c(0.75)
+    upper = c(0.8)
   )
   iter_df$ALPHA <- parameters$par[1]
   iter_df$GAMMA <- parameters$par[2]
@@ -368,6 +352,8 @@ new_df$ABS_E <- round(new_df$ABS_E, digits = 3)
 
 new_df$GAMMA[is.na(new_df$GAMMA)] <- 0
 new_df$PHI[is.na(new_df$PHI)] <- 0
+
+sum(new_df$ABS_E)
 
 new_df <- new_df %>%
   mutate("LVL_1" = SLS_1 / IND_1) %>%
@@ -556,7 +542,7 @@ curr_week <- hist_wk %>%
 
 yr_wk_lock <- as_vector(curr_week[1] + 100)
 
-# 04 - Summarize and Export Mode ------------------------------------------
+# 05 - Summarize and Export --------------------------------------------
 
 fcst_sku_loc <- fcst %>%
   spread(FCST_YR_WK, FCST, fill = 0)
@@ -649,6 +635,9 @@ fcst_sku_loc <- fcst_sku_loc %>%
   mutate("n52w_fcst" = rowSums(.[6:57]))
 
 colnames(fcst_sku_loc)[3] <- "upc"
+
+write_csv(fcst_sku_loc, "gl-fcst-sku-loc.csv")
+write_csv(fcst, "fcst-flat.csv")
 
 fcst_isaiah <- fcst_sku_loc %>%
   select(brand,

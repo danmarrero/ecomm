@@ -26,7 +26,7 @@ library(plotly)
 library(DT)
 ```
 
-Stock
+Stock KPI
 =======================================================================
 
 Column {data-width=200}
@@ -35,7 +35,7 @@ Column {data-width=200}
 ### Grand Total ATP OOS %
 
 ```{r}
-rate <- 1.5
+rate <- 2.0
 gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
   success = c(0, 9), warning = c(10, 29), danger = c(30, 100)
 ))
@@ -44,7 +44,7 @@ gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
 ### Grand Total ATP + ITR OOS %
 
 ```{r}
-rate <- 0.8
+rate <- 0.9
 gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
   success = c(0, 9), warning = c(10, 29), danger = c(30, 100)
 ))
@@ -54,7 +54,7 @@ gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
 ### NPI ATP OOS %
 
 ```{r}
-rate <- 27.3
+rate <- 9.4
 gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
   success = c(0, 9), warning = c(10, 29), danger = c(30, 100)
 ))
@@ -95,7 +95,7 @@ p <- ggplot(data = oos_summary, aes(fill = TYPE, y = OOS, x = CC)) +
   scale_fill_manual("TYPE", values = c("ATP" = "#005192", "ITR" = "#7FA8C8",
                                        "POOS" = "#DFE9F1")) #+
   #geom_text(aes(y = OOS + .9,    # nudge above top of bar
-  #              label = paste0(OOS, '%')),    # prettify
+  #              label = paste0(OOS, '')),    # prettify
   #              position = position_dodge(width = .8), 
   #              size = 2.85)
 
@@ -265,6 +265,7 @@ MODELLO,
 `GRID VALUE`,
 UPC,
 CC,
+ZZFCAM,
 AVAILABLE,
 ALLOCATED,
 `QUAL-INSP`,
@@ -293,13 +294,14 @@ names(detail)[2] <- c("MODEL")
 names(detail)[3] <- c("GRID_VALUE")
 names(detail)[4] <- c("EAN_UPC")
 names(detail)[5] <- c("CONTR_CODE")
-names(detail)[6] <- c("ATP_QTY")
-names(detail)[7] <- c("ALLOCATED")
-names(detail)[8] <- c("QUAL_INSP")
-names(detail)[9] <- c("TRANSIT")
-names(detail)[16] <- c("QAF_CALC")
-names(detail)[17] <- c("QAF_CURR")
-names(detail)[19] <- c("OOS_ITR")
+names(detail)[6] <- c("ZZFCAM")
+names(detail)[7] <- c("ATP_QTY")
+names(detail)[8] <- c("ALLOCATED")
+names(detail)[9] <- c("QUAL_INSP")
+names(detail)[10] <- c("TRANSIT")
+names(detail)[17] <- c("QAF_CALC")
+names(detail)[18] <- c("QAF_CURR")
+names(detail)[20] <- c("OOS_ITR")
 
 detail <- detail %>%
   arrange(desc(L13W_SLS))

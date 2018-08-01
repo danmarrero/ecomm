@@ -36,11 +36,23 @@ gcs_auth()
 # 02 - Import Data --------------------------------------------------------
 
 stock <- gcs_get_object("stock.csv", bucket = "ecomm_lux")
+all_stock <- gcs_get_object("all_stock.csv", bucket = "ecomm_lux")
 qaf <- gcs_get_object("qaf.csv", bucket = "ecomm_lux")
 transit <- gcs_get_object("transit.csv", bucket = "ecomm_lux")
 zupc <- gcs_get_object("zupc_ago.csv", bucket = "ecomm_lux")
 hist_oos <- gcs_get_object("hist_oos.csv", bucket = "ecomm_lux")
 release <- gcs_get_object("release.csv", bucket = "ecomm_lux")
+lifecycle <- gcs_get_object("sap_lifecycle_gl.csv", bucket = "ecomm_lux")
+calendar <- gcs_get_object("sap_calendar_gl.csv", bucket = "ecomm_lux")
+
+write_csv(lifecycle, "lifecycle.csv")
+
+lifecycle_gl <-read_delim("lifecycle.csv", 
+                          ",",
+                          escape_double = FALSE,
+                          locale = locale(encoding = "ISO-8859-1"), 
+                          na = "empty",
+                          trim_ws = TRUE)
 
 sql <- "SELECT * FROM [ecomm-197702:ecomm.time_dim]"
 time_dim <- query_exec(sql, project = project)
@@ -88,8 +100,8 @@ detail <- qaf %>%
     CALIBRO,
     COLORE,
     `QUANTITA'`
-  ) %>%
-  filter(DATESTCODE == 8460)
+  ) #%>%
+  #filter(DATESTCODE == "008460")
 
 sku <- zupc %>%
   select(Material, Dim.value2, Dim.value1, `Grid value`, `Primary UPC`) %>%
@@ -160,14 +172,14 @@ detail$cc[detail$REL == "NPI"] <- "NPI"
 #  mutate(cc_new = if_else(detail$REL =))
 
 detail <- detail %>%
-  mutate("MIN" = if_else(detail$cc == "A", 12,
-                 if_else(detail$cc == "B", 7,
+  mutate("MIN" = if_else(detail$cc == "A", 7,
+                 if_else(detail$cc == "B", 5,
                  if_else(detail$cc == "C", 5,
                  if_else(detail$cc == "D", 3,
                  if_else(detail$cc == "E", 3,
-                 if_else(detail$cc == "ADV", 12,
-                 if_else(detail$cc == "NPI", 12, 3)))))))) %>%
-  mutate("TGT_WOS" = detail$n13w_fcst / 13 * 8)
+                 if_else(detail$cc == "ADV", 8,
+                 if_else(detail$cc == "NPI", 8, 3)))))))) %>%
+  mutate("TGT_WOS" = detail$n13w_fcst / 13 * 7)
 
 detail[is.na(detail)] <- 0
 
@@ -182,13 +194,24 @@ names(detail) <- toupper(names(detail))
 
 detail[is.na(detail)] <- 0
 
+lifecycle_gl <- lifecycle_gl %>%
+  select(Material, `Grid value`, `Flag collection`) %>%
+  unite(MatGrV, Material, `Grid value`, sep = "", remove = TRUE)
+
+detail <- detail %>%
+  unite(MatGrV, MODELLO, `GRID VALUE`, sep = "", remove = FALSE)
+
+detail <- left_join(detail, lifecycle_gl, by = "MatGrV")
+
+names(detail)[31] <- c("ZZFCAM")
+
 # Flag Calculations -------------------------------------------------------
 
 detail <- detail %>%
   mutate("OOS" = if_else(AVAILABLE <= 2, 1, 0)) %>%
   mutate("OOS_WITH_TRANSIT" = if_else(AVAILABLE + TRANSIT + `QUAL-INSP` > 2,
                                       0, 1)) %>%
-  mutate("POOS" = if_else(OOS == 0 & AVAILABLE + TRANSIT + `QUAL-INSP` < N04W_FCST / 2,
+  mutate("POOS" = if_else(OOS == 0 & AVAILABLE + TRANSIT + `QUAL-INSP` < N04W_FCST,
                                     1, 0)) %>%
   mutate("UPC_CNT" = 1)
 
@@ -335,6 +358,8 @@ write_csv(oos_summary, "oos_summary.csv")
 write_csv(brand_summary, "brand_summary.csv")
 write_csv(npi_summary, "npi_summary.csv")
 write_csv(hist_oos, "hist_oos.csv")
+write_csv(lifecycle_gl, "lifecycle_gl.csv")
+write_csv(all_stock, "all_stock.csv")
 
 gcs_upload("hist_oos.csv", gcs_global_bucket(bucket))
 
