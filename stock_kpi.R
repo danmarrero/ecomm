@@ -42,6 +42,7 @@ qaf <- gcs_get_object("qaf.csv", bucket = "ecomm_lux")
 transit <- gcs_get_object("transit.csv", bucket = "ecomm_lux")
 zupc <- gcs_get_object("zupc_ago.csv", bucket = "ecomm_lux")
 hist_oos <- gcs_get_object("hist_oos.csv", bucket = "ecomm_lux")
+brand_hist_oos <- gcs_get_object("brand_hist_oos.csv", bucket = "ecomm_lux")
 release <- gcs_get_object("release.csv", bucket = "ecomm_lux")
 lifecycle <- gcs_get_object("sap_lifecycle_gl.csv", bucket = "ecomm_lux")
 calendar <- gcs_get_object("sap_calendar_gl.csv", bucket = "ecomm_lux")
@@ -91,6 +92,9 @@ hist_oos <- hist_oos %>%
   select(-X1)
 
 hist_oos <- hist_oos %>%
+  filter(DATE != Sys.Date())
+
+brand_hist_oos <- brand_hist_oos %>%
   filter(DATE != Sys.Date())
 
 detail <- qaf %>%
@@ -358,6 +362,14 @@ hist_oos <- hist_oos %>%
   select(DATE, CC, `ATP OOS %`) %>%
   distinct()
 
+brand_oos_today <- brand_summary %>%
+  select(BRAND, ATP) %>%
+  mutate(DATE = Sys.Date()) %>%
+  select(DATE, BRAND, ATP)
+
+brand_hist_oos <- bind_rows(brand_hist_oos, brand_oos_today)
+
+
 # Export ------------------------------------------------------------------
 
 write_csv(detail, "qaf_detail.csv")
@@ -365,10 +377,12 @@ write_csv(oos_summary, "oos_summary.csv")
 write_csv(brand_summary, "brand_summary.csv")
 write_csv(npi_summary, "npi_summary.csv")
 write_csv(hist_oos, "hist_oos.csv")
+write_csv(brand_hist_oos, "brand_hist_oos.csv")
 write_csv(lifecycle_gl, "lifecycle_gl.csv")
 write_csv(all_stock, "all_stock.csv")
 
 gcs_upload("hist_oos.csv", gcs_global_bucket(bucket))
+gcs_upload("brand_hist_oos.csv", gcs_global_bucket(bucket))
 
 sum(detail$QAF_REV)
 

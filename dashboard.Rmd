@@ -35,7 +35,15 @@ Column {data-width=200}
 ### Grand Total ATP OOS %
 
 ```{r}
-rate <- 1.9
+oos_summary <- read_csv("oos_summary.csv")
+
+oos_summary <- oos_summary %>%
+  select(CC, ATP) %>%
+  filter(CC == "Grand Total")
+
+x <- oos_summary$ATP * 100
+
+rate <- x
 gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
   success = c(0, 9), warning = c(10, 29), danger = c(30, 100)
 ))
@@ -44,7 +52,15 @@ gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
 ### Grand Total ATP + ITR OOS %
 
 ```{r}
-rate <- 0.9
+oos_summary <- read_csv("oos_summary.csv")
+
+oos_summary <- oos_summary %>%
+  select(CC, ITR) %>%
+  filter(CC == "Grand Total")
+
+y <- oos_summary$ITR * 100
+
+rate <- y
 gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
   success = c(0, 9), warning = c(10, 29), danger = c(30, 100)
 ))
@@ -54,7 +70,15 @@ gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
 ### NPI ATP OOS %
 
 ```{r}
-rate <- 3.4
+oos_summary <- read_csv("oos_summary.csv")
+
+oos_summary <- oos_summary %>%
+  select(CC, ATP) %>%
+  filter(CC == "NPI")
+
+z <- oos_summary$ATP * 100
+
+rate <- z
 gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
   success = c(0, 9), warning = c(10, 29), danger = c(30, 100)
 ))
