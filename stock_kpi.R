@@ -37,6 +37,7 @@ gcs_auth()
 
 stock <- gcs_get_object("stock.csv", bucket = "ecomm_lux")
 all_stock <- gcs_get_object("all_stock.csv", bucket = "ecomm_lux")
+sap_us03_gl <- gcs_get_object("sap_us03_gl.csv", bucket = "ecomm_lux")
 qaf <- gcs_get_object("qaf.csv", bucket = "ecomm_lux")
 transit <- gcs_get_object("transit.csv", bucket = "ecomm_lux")
 zupc <- gcs_get_object("zupc_ago.csv", bucket = "ecomm_lux")
@@ -82,6 +83,9 @@ cc <- query_exec(sql, project = project)
 #hist_oos <- read_csv("hist_oos.csv")
 
 # Transform Data ----------------------------------------------------------
+
+sap_us03_gl <- sap_us03_gl %>%
+  select(-X1)
 
 hist_oos <- hist_oos %>%
   select(-X1)
@@ -215,6 +219,9 @@ detail <- detail %>%
                                     1, 0)) %>%
   mutate("UPC_CNT" = 1)
 
+detail <- left_join(detail, sap_us03_gl, by = "UPC")
+
+detail[is.na(detail)] <- 0
 
 oos_summary <- detail %>%
   select(CC, UPC_CNT, OOS, OOS_WITH_TRANSIT, POOS) %>%

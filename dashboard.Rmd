@@ -35,7 +35,7 @@ Column {data-width=200}
 ### Grand Total ATP OOS %
 
 ```{r}
-rate <- 2.0
+rate <- 1.9
 gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
   success = c(0, 9), warning = c(10, 29), danger = c(30, 100)
 ))
@@ -54,7 +54,7 @@ gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
 ### NPI ATP OOS %
 
 ```{r}
-rate <- 9.4
+rate <- 3.4
 gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
   success = c(0, 9), warning = c(10, 29), danger = c(30, 100)
 ))
@@ -281,7 +281,8 @@ QAF_REV,
 OOS,
 OOS_WITH_TRANSIT,
 POOS,
-REL
+REL,
+US03
 ) %>%
   filter(UPC != 0)
 
