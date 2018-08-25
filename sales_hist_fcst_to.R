@@ -1,4 +1,4 @@
-# Glasses.com N52W Demand Forecast
+# TargetOptical.com N52W Demand Forecast
 
 # 01 - Load Packages, Global Variables & Options --------------------------
 
@@ -41,7 +41,7 @@ time_dim <- query_exec(sql, project = project)
 
 x <- min(time_dim$f_yr_week) + 200 
 
-sql <- paste("DELETE ecomm.fcst_locked_isaiah WHERE yr_wk_lock = ", x ," AND brand = 'GLSCOM'", sep = "")
+sql <- paste("DELETE ecomm.fcst_locked_isaiah WHERE yr_wk_lock = ", x ," AND brand = 'TO'", sep = "")
 query_exec(sql, project = project, use_legacy_sql = FALSE)
 
 # Begin Importing
@@ -56,11 +56,11 @@ gcs_get_object("demand_hist_optical.csv",
 
 l52w_sls_dpm <- read_csv(
   "demand_hist_optical.csv"#,
-#  col_types = cols(
-#    `Comm Unconsumed Fcst` = col_number(),
-#    `Stat Unconsumed Fcst` = col_number()
-#  ),
-#  locale = locale(encoding = "ISO-8859-1")
+  #  col_types = cols(
+  #    `Comm Unconsumed Fcst` = col_number(),
+  #    `Stat Unconsumed Fcst` = col_number()
+  #  ),
+  #  locale = locale(encoding = "ISO-8859-1")
 )
 
 sql <- "SELECT   f_yr_week, id
@@ -75,7 +75,7 @@ hist_wk <- query_exec(sql, project = project)
 l52w_sls_dpm <- l52w_sls_dpm %>%
   select(-X1) %>%
   filter(Week != 0) %>%
-  filter(`Ecomm Platform` == "Glasses.com")
+  filter(`Ecomm Platform` == "TargetOptical.com")
 
 names(l52w_sls_dpm)[1] <- "DPT"
 names(l52w_sls_dpm)[2] <- "F_YR"
@@ -371,7 +371,7 @@ new_df$ABS_E <- round(new_df$ABS_E, digits = 3)
 new_df$GAMMA[is.na(new_df$GAMMA)] <- 0
 new_df$PHI[is.na(new_df$PHI)] <- 0
 
-sum(new_df$ABS_E)
+abs_error_sum <- sum(new_df$ABS_E)
 
 new_df <- new_df %>%
   mutate("LVL_1" = SLS_1 / IND_1) %>%
@@ -546,7 +546,7 @@ hist_l52w_sls <- hist_l52w_sls %>%
   mutate("l13w_sls" = rowSums(.[2:14])) %>%
   mutate("l26w_sls" = rowSums(.[2:27])) %>%
   mutate("l52w_sls" = rowSums(.[2:53])) %>%
-  mutate("brand" = "GLSCOM") %>%
+  mutate("brand" = "TO") %>%
   select(brand, SKU_NBR, lw_sls, l04w_sls, l13w_sls, l26w_sls, l52w_sls) %>%
   filter(l52w_sls > 0)
 
@@ -622,7 +622,7 @@ names(fcst_sku_loc)[6:57] <-
   )
 
 fcst_sku_loc <- fcst_sku_loc %>%
-  mutate("brand" = "GLSCOM") %>%
+  mutate("brand" = "TO") %>%
   mutate("yr_wk_lock" = yr_wk_lock) %>%
   mutate("tw_fcst" = fcst_sku_loc$`1`) %>%
   mutate("n04w_fcst" = fcst_sku_loc$`1` + fcst_sku_loc$`2` + fcst_sku_loc$`3` +
@@ -654,8 +654,8 @@ fcst_sku_loc <- fcst_sku_loc %>%
 
 colnames(fcst_sku_loc)[3] <- "upc"
 
-write_csv(fcst_sku_loc, "gl-fcst-sku-loc.csv")
-write_csv(fcst, "fcst-flat.csv")
+write_csv(fcst_sku_loc, "to-fcst-sku-loc.csv")
+write_csv(fcst, "to-fcst-flat.csv")
 
 fcst_isaiah <- fcst_sku_loc %>%
   select(brand,
@@ -712,5 +712,5 @@ insert_upload_job(
   table = "sales_lxw",
   hist_l52w_sls,
   billing = project,
-  write_disposition = "WRITE_TRUNCATE"
+  write_disposition = "WRITE_APPEND"
 )

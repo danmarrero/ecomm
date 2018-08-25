@@ -61,29 +61,37 @@ time_dim <- query_exec(sql, project = project)
 
 x <- min(time_dim$f_yr_week) + 200
 
-sql <- "SELECT * FROM [ecomm-197702:ecomm.sales_lxw]"
+sql <- "SELECT * FROM [ecomm-197702:ecomm.sales_lxw] WHERE brand = 'GLSCOM'"
 sales_lxw <- query_exec(sql, project = project)
 
 sql <-
   paste("SELECT * FROM [ecomm-197702:ecomm.fcst_locked_isaiah] WHERE yr_wk_lock = ",
         x ,
-        "",
+        " AND brand = 'GLSCOM'",
         sep = "")
 fcst_isaiah <- query_exec(sql, project = project)
 
-sql <-
-  paste("SELECT * FROM [ecomm-197702:ecomm.fcst_locked_dpm] WHERE yr_wk_lock = ",
-        x ,
-        "",
-        sep = "")
-fcst_dpm <- query_exec(sql, project = project)
+#sql <-
+#  paste("SELECT * FROM [ecomm-197702:ecomm.fcst_locked_dpm] WHERE yr_wk_lock = ",
+#        x ,
+#        "",
+#        sep = "")
+#fcst_dpm <- query_exec(sql, project = project)
 
-sql <- "SELECT * FROM [ecomm-197702:ecomm.cc_dim]"
+sql <- "SELECT * FROM [ecomm-197702:ecomm.cc_dim] WHERE brand = 'GLSCOM'"
 cc <- query_exec(sql, project = project)
 
 #hist_oos <- read_csv("hist_oos.csv")
 
 # Transform Data ----------------------------------------------------------
+
+
+
+cc <- cc %>%
+  select(-brand)
+
+#sales_lxw <- sales_lxw %>%
+#  select(-brand)
 
 sap_us03_gl <- sap_us03_gl %>%
   select(-X1)
@@ -165,7 +173,8 @@ detail <- left_join(detail, fcst_isa, by = "UPC")
 detail$cc[is.na(detail$cc)] <- "E"
 
 release <- release %>%
-  select(-X1)
+  filter(BRAND == "GL") %>%
+  select(-X1, -ARTICLE, -BRAND)
 
 detail <- left_join(detail, release, by = "UPC")
 
