@@ -63,7 +63,7 @@ sql <-
   paste(
     "SELECT upc, n13w_fcst FROM [ecomm-197702:ecomm.fcst_locked_isaiah] WHERE yr_wk_lock = ",
     lag13 ,
-    "",
+    " AND brand = 'GLSCOM'",
     sep = ""
   )
 
@@ -75,7 +75,7 @@ sql <-
   paste(
     "SELECT upc, n04w_fcst FROM [ecomm-197702:ecomm.fcst_locked_isaiah] WHERE yr_wk_lock = ",
     lag04 ,
-    "",
+    " AND brand = 'GLSCOM'",
     sep = ""
   )
 
@@ -87,7 +87,7 @@ sql <-
   paste(
     "SELECT upc, tw_fcst FROM [ecomm-197702:ecomm.fcst_locked_isaiah] WHERE yr_wk_lock = ",
     lag01 ,
-    "",
+    " AND brand = 'GLSCOM'",
     sep = ""
   )
 
@@ -101,7 +101,7 @@ sql <-
   paste(
     "SELECT upc, n13w_fcst FROM [ecomm-197702:ecomm.fcst_locked_dpm] WHERE yr_wk_lock = ",
     lag13 ,
-    "",
+    " AND brand = 'GLSCOM'",
     sep = ""
   )
 
@@ -113,7 +113,7 @@ sql <-
   paste(
     "SELECT upc, n04w_fcst FROM [ecomm-197702:ecomm.fcst_locked_dpm] WHERE yr_wk_lock = ",
     lag04 ,
-    "",
+    " AND brand = 'GLSCOM'",
     sep = ""
   )
 
@@ -125,7 +125,7 @@ sql <-
   paste(
     "SELECT upc, tw_fcst FROM [ecomm-197702:ecomm.fcst_locked_dpm] WHERE yr_wk_lock = ",
     lag01 ,
-    "",
+    " AND brand = 'GLSCOM'",
     sep = ""
   )
 

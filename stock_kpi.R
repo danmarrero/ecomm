@@ -381,6 +381,60 @@ brand_hist_oos <- bind_rows(brand_hist_oos, brand_oos_today)
 
 # Export ------------------------------------------------------------------
 
+detail_gl <- detail %>%
+  select(
+    BRAND,
+    MODELLO,
+    `GRID VALUE`,
+    UPC,
+    CC,
+    ZZFCAM,
+    AVAILABLE,
+    ALLOCATED,
+    `QUAL-INSP`,
+    TRANSIT,
+    L13W_SLS,
+    L04W_SLS,
+    LW_SLS,
+    TW_FCST,
+    N04W_FCST,
+    N13W_FCST,
+    QAF_REV,
+    `QUANTITA'`,
+    OOS,
+    OOS_WITH_TRANSIT,
+    POOS,
+    REL,
+    US03
+  ) %>%
+  filter(UPC != 0)
+
+detail_gl$TW_FCST <- round(detail$TW_FCST, digits = 2)
+detail_gl$N04W_FCST <- round(detail$N04W_FCST, digits = 2)
+detail_gl$N13W_FCST <- round(detail$N13W_FCST, digits = 2)
+
+names(detail_gl)[1] <- c("BRAND")
+names(detail_gl)[2] <- c("MODEL")
+names(detail_gl)[3] <- c("GRID_VALUE")
+names(detail_gl)[4] <- c("EAN_UPC")
+names(detail_gl)[5] <- c("CONTR_CODE")
+names(detail_gl)[6] <- c("ZZFCAM")
+names(detail_gl)[7] <- c("ATP_QTY")
+names(detail_gl)[8] <- c("ALLOCATED")
+names(detail_gl)[9] <- c("QUAL_INSP")
+names(detail_gl)[10] <- c("TRANSIT")
+names(detail_gl)[17] <- c("QAF_CALC")
+names(detail_gl)[18] <- c("QAF_CURR")
+names(detail_gl)[20] <- c("OOS_ITR")
+
+detail_gl <- detail_gl %>%
+  arrange(desc(L13W_SLS)) %>%
+  mutate(UPC_CNT = 1)
+
+detail_gl <- detail_gl %>%
+  mutate(RELEASE = if_else(detail_gl$CONTR_CODE == "NPI", "NPI", "Carryover"))
+
+write_excel_csv(detail_gl, "detail_gl.csv")
 write_csv(detail, "qaf_detail.csv")
 write_csv(oos_summary, "oos_summary.csv")
 write_csv(brand_summary, "brand_summary.csv")
@@ -392,6 +446,7 @@ write_csv(all_stock, "all_stock.csv")
 
 gcs_upload("hist_oos.csv", gcs_global_bucket(bucket))
 gcs_upload("brand_hist_oos.csv", gcs_global_bucket(bucket))
+gcs_upload("detail_gl.csv", gcs_global_bucket(bucket), type = 'text/csv')
 
 sum(detail$QAF_REV)
 
