@@ -4,7 +4,7 @@ output:
   flexdashboard::flex_dashboard:
     logo: glasses_logo_white_small.png
     favicon: glasses_logo_favicon.jpg
-    orientation: columns
+    orientation: rows
     vertical_layout: fill
 ---
 
@@ -29,7 +29,7 @@ library(DT)
 Stock KPI
 =======================================================================
 
-Column {data-width=200}
+Row
 -----------------------------------------------------------------------
 
 ### Grand Total ATP OOS %
@@ -84,9 +84,25 @@ gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
 ))
 ```
 
+### NPI ATP + ITR OOS %
+
+```{r}
+oos_summary <- read_csv("oos_summary.csv")
+
+oos_summary <- oos_summary %>%
+  select(CC, ITR) %>%
+  filter(CC == "NPI")
+
+z <- oos_summary$ITR * 100
+
+rate <- z
+gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
+  success = c(0, 9), warning = c(10, 29), danger = c(30, 100)
+))
+```
 
 
-Column {data-width=400}
+Row
 -----------------------------------------------------------------------
 
 ### OOS % by Contribution Code
@@ -137,10 +153,6 @@ ggplotly(p) %>%
 ```
 
 
-Column {data-width=400}
------------------------------------------------------------------------
-
-
 ### Historical ATP OOS % by Contribution Code
 
 ```{r}
@@ -189,7 +201,7 @@ ggplotly(p)
 Brand
 =======================================================================
 
-Column {data-width=500}
+Row
 -----------------------------------------------------------------------
 
 ### Total OOS % by Brand
@@ -229,9 +241,6 @@ ggplotly(b) %>%
     layout(showlegend = FALSE)
 ```
 
-
-Column {data-width=500}
------------------------------------------------------------------------
 
 ### NPI OOS % by Brand
 
