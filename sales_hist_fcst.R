@@ -39,7 +39,8 @@ gcs_auth()
 sql <- "SELECT * FROM [ecomm-197702:ecomm.time_dim]"
 time_dim <- query_exec(sql, project = project)
 
-x <- min(time_dim$f_yr_week) + 200 
+x <- min(time_dim$f_yr_week) + 200
+#x <- max(time_dim$f_yr_week)
 
 sql <- paste("DELETE ecomm.fcst_locked_isaiah WHERE yr_wk_lock = ", x ," AND brand = 'GLSCOM'", sep = "")
 query_exec(sql, project = project, use_legacy_sql = FALSE)

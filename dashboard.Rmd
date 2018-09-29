@@ -116,7 +116,7 @@ oos_summary <- oos_summary %>%
 oos_summary <- oos_summary %>%
   gather(ATP, ITR, POOS, key = "TYPE", value = "OOS")
 
-oos_summary$OOS <- oos_summary$OOS * 100
+#oos_summary$OOS <- oos_summary$OOS * 100
 
 oos_summary$facet = factor(oos_summary$CC,
                            levels = c("A",
@@ -130,7 +130,8 @@ oos_summary$facet = factor(oos_summary$CC,
 p <- ggplot(data = oos_summary, aes(fill = TYPE, y = OOS, x = CC)) +
   geom_bar(position = "dodge", stat = "identity", width = 0.85) +
   theme(legend.position = "none") +
-  scale_y_continuous(limits = c(0, 100)) +
+  scale_y_continuous(limits = c(0, 0.2), labels = percent) +
+  #scale_y_continuous(labels = percent) +
   theme_minimal() +
   scale_fill_manual("TYPE", values = c("ATP" = "#005192", "ITR" = "#7FA8C8",
                                        "POOS" = "#DFE9F1")) #+
@@ -184,7 +185,7 @@ p <-
   theme(legend.position = "none") +
   theme_bw()
 
-p <- p + facet_wrap(~ facet, nr = 3) +
+p <- p + facet_wrap(~ facet, nr = 2) +
   theme(strip.background = element_rect(fill = "#005192"),
         strip.text = element_text(#size = 10,
                                   color = "white",

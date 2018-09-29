@@ -50,12 +50,12 @@ gcs_get_object("dpm_hist_fcst.csv",
                saveToDisk = "dpm_hist_fcst.csv",
                overwrite = TRUE)
 
-gcs_get_object("demand_hist_optical.csv",
-               saveToDisk = "demand_hist_optical.csv",
+gcs_get_object("lc_to_dmd.csv",
+               saveToDisk = "lc_to_dmd.csv",
                overwrite = TRUE)
 
 l52w_sls_dpm <- read_csv(
-  "demand_hist_optical.csv"#,
+  "lc_to_dmd.csv"#,
   #  col_types = cols(
   #    `Comm Unconsumed Fcst` = col_number(),
   #    `Stat Unconsumed Fcst` = col_number()
@@ -77,6 +77,12 @@ l52w_sls_dpm <- l52w_sls_dpm %>%
   filter(Week != 0) %>%
   filter(`Ecomm Platform` == "LensCrafter.com")
 
+l52w_sls_dpm <- l52w_sls_dpm %>%
+  filter(!is.na(Collection))
+
+l52w_sls_dpm <- l52w_sls_dpm %>%
+  select(`Ecomm Platform`, Year, Week, Collection, `UPC WCS`, `Gross Pieces`)
+
 names(l52w_sls_dpm)[1] <- "DPT"
 names(l52w_sls_dpm)[2] <- "F_YR"
 names(l52w_sls_dpm)[3] <- "F_WK"
@@ -84,6 +90,8 @@ names(l52w_sls_dpm)[4] <- "CL_NME"
 names(l52w_sls_dpm)[5] <- "SKU_NBR"
 names(l52w_sls_dpm)[6] <- "SLS_U"
 #names(l52w_sls_dpm)[7] <- "FCST_DPM"
+
+l52w_sls_dpm$CL_NME <- "Glasses"
 
 names(hist_wk)[1] <- "F_YR_WK"
 names(hist_wk)[2] <- "HIST_WK"
