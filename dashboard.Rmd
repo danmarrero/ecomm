@@ -130,7 +130,7 @@ oos_summary$facet = factor(oos_summary$CC,
 p <- ggplot(data = oos_summary, aes(fill = TYPE, y = OOS, x = CC)) +
   geom_bar(position = "dodge", stat = "identity", width = 0.85) +
   theme(legend.position = "none") +
-  scale_y_continuous(limits = c(0, 0.2), labels = percent) +
+  scale_y_continuous(limits = c(0, 0.25), labels = percent) +
   #scale_y_continuous(labels = percent) +
   theme_minimal() +
   scale_fill_manual("TYPE", values = c("ATP" = "#005192", "ITR" = "#7FA8C8",

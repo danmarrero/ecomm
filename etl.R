@@ -37,3 +37,5 @@ gcs_auth()
 
 gcs_upload("gl-dashboard.html", gcs_global_bucket(bucket), type = 'text/html')
 gcs_upload("dashboard.html", gcs_global_bucket(bucket), type = 'text/html')
+gcs_upload("p-lc.png", gcs_global_bucket(bucket))
+gcs_upload("p-to.png", gcs_global_bucket(bucket))

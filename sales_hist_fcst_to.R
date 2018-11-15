@@ -85,6 +85,8 @@ names(l52w_sls_dpm)[5] <- "SKU_NBR"
 names(l52w_sls_dpm)[6] <- "SLS_U"
 #names(l52w_sls_dpm)[7] <- "FCST_DPM"
 
+l52w_sls_dpm$CL_NME <- "Glasses"
+
 names(hist_wk)[1] <- "F_YR_WK"
 names(hist_wk)[2] <- "HIST_WK"
 

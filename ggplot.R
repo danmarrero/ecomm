@@ -14,6 +14,7 @@ p <- ggplot(data = oos_summary, aes(fill = TYPE, y = OOS, x = CC)) +
            width = 0.85) +
   theme(legend.position = "none") +
   scale_y_continuous(limits = c(0, 50)) +
+
   theme_minimal() +
   scale_fill_manual("TYPE",
                     values = c(
@@ -30,7 +31,7 @@ p <- ggplot(data = oos_summary, aes(fill = TYPE, y = OOS, x = CC)) +
 p <- p + theme(
   axis.title.x = element_blank(),
   axis.title.y = element_blank(),
-  legend.position = "bottom"
+  legend.position = "right"
 )
 
 p <-

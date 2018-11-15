@@ -1,6 +1,5 @@
 ## Prop Table for LC.com Forecast
 
-
 # 01 - Load Packages, Global Variables & Options --------------------------
 
 ptm <- proc.time()
@@ -79,7 +78,7 @@ hist_dmd_top_all <- bind_rows(df, hist_dmd_top)
 demand <- hist_dmd_top_all %>%
   select(DMD)
 
-y <- ts(demand, frequency = 52)
+y <- ts(demand, frequency = 52, start = c(2017,1))
 
 fcst <- y %>%
   Arima(order = c(0,1,1), seasonal = c(0, 1, 2)) %>%
@@ -90,25 +89,14 @@ fcstdf <- as.data.frame(fcst)
 p <- y %>%
   Arima(order = c(0, 1, 1), seasonal = c(0, 1, 2)) %>%
   forecast(h = 26) %>%
-  autoplot(ylab = "Units")
+  autoplot(ylab = "Units", xlab = "Year")
 
-p <- p + labs(title = "Lenscrafters.com\nDemand Forecast")
-
+p <- p + labs(title = "Next 26 Week\nDemand Forecast")
+p <- p + scale_x_continuous(breaks = c(2017, 2018, 2019))
 
 p
 
-
-ggsave("p.png", plot = p, h = 9/2, w = 16/2, type = "cairo-png")
-
-
-
-
-
-
-
-
-
-
+ggsave("p-lc.png", plot = p, h = 9/2, w = 16/2, type = "cairo-png")
 
 # UPC Proportion Table ----------------------------------------------------
 
@@ -162,30 +150,3 @@ fcst_nxw <- n26w_fcst %>%
   mutate("N13W_FCST" = rowSums(.[2:14])) %>%
   mutate("N26W_FCST" = rowSums(.[2:27])) %>%
   select(UPC, TW_FCST, N04W_FCST, N13W_FCST, N26W_FCST)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
