@@ -49,18 +49,21 @@ gcs_auth()
 
 ## Import data------------------------------------------------------------------
 
-campaign_lc <- gcs_get_object("campaign_lc.csv", bucket = "ecomm_lux")
+campaign_lc <-
+  gcs_get_object("campaign_lc.csv", bucket = "ecomm_lux")
 demand_lc <- gcs_get_object("demand_lc.csv", bucket = "ecomm_lux")
-assortment_lc <- gcs_get_object("assortment_lc.csv", bucket = "ecomm_lux")
+assortment_lc <-
+  gcs_get_object("assortment_lc.csv", bucket = "ecomm_lux")
 
-sap_lc_ms_wr60 <- gcs_get_object("sap_lc_ms_wr60.csv", bucket = "ecomm_lux")
+sap_lc_ms_wr60 <-
+  gcs_get_object("sap_lc_ms_wr60.csv", bucket = "ecomm_lux")
 
 project <- "ecomm-197702"
 sql <- "SELECT * FROM [ecomm-197702:ecomm.time_dim]"
 time_dim <- query_exec(sql, project = project)
 
 time_dim <- time_dim %>%
-  select(-date, -f_day, -f_day_nbr, -f_week, -f_month, -f_quarter) %>%
+  select(-date,-f_day,-f_day_nbr,-f_week,-f_month,-f_quarter) %>%
   distinct()
 
 campaign_lc <- campaign_lc %>% select(-X1)
@@ -121,7 +124,7 @@ df <- df %>%
 ## Transform & Summarise Data---------------------------------------------------
 
 demand_lc <- demand_lc %>%
-  select(F_YR_WK, UPC, Gross.Pieces) %>%
+  select(F_YR_WK, UPC, Retail.Units) %>%
   filter(!is.na(UPC)) %>%
   filter(UPC != 99)
 
@@ -219,7 +222,7 @@ supply_lc <-
 supply_lc <- supply_lc %>%
   unique()
 
-supply_lc <- supply_lc[!duplicated(supply_lc$UPC), ]
+supply_lc <- supply_lc[!duplicated(supply_lc$UPC),]
 
 colnames(supply_lc)[7] <- "CORE_PROD_TYPE"
 
@@ -257,10 +260,11 @@ oos_summary_total <- oos_summary %>%
 
 oos_summary_total <- oos_summary_total %>%
   group_by(Release) %>%
-  summarise(UPC = sum(UPC),
-            `9901_OOS` = sum(`9901_OOS`),
-            `8843_OOS` = sum(`8843_OOS`),
-            TOTAL_OOS = sum(TOTAL_OOS)
+  summarise(
+    UPC = sum(UPC),
+    `9901_OOS` = sum(`9901_OOS`),
+    `8843_OOS` = sum(`8843_OOS`),
+    TOTAL_OOS = sum(TOTAL_OOS)
   )
 
 oos_summary_total <- oos_summary_total %>%
@@ -271,18 +275,24 @@ oos_summary_total <- oos_summary_total %>%
 oos_summary_total <- oos_summary_total %>%
   select(Release, `9901`, `8843`, Total)
 
-oos_summary_total$`9901` <- round(oos_summary_total$`9901`, digits = 3)
-oos_summary_total$`8843` <- round(oos_summary_total$`8843`, digits = 3)
-oos_summary_total$Total <- round(oos_summary_total$Total, digits = 3)
+oos_summary_total$`9901` <-
+  round(oos_summary_total$`9901`, digits = 3)
+oos_summary_total$`8843` <-
+  round(oos_summary_total$`8843`, digits = 3)
+oos_summary_total$Total <-
+  round(oos_summary_total$Total, digits = 3)
 
 oos_summary <- oos_summary %>%
   mutate("OOS_9901_PCT" = `9901_OOS` / UPC) %>%
   mutate("OOS_8843_PCT" = `8843_OOS` / UPC) %>%
   mutate("OOS_TOTAL_PCT" = TOTAL_OOS / UPC)
 
-oos_summary$OOS_9901_PCT <- round(oos_summary$OOS_9901_PCT, digits = 3)
-oos_summary$OOS_8843_PCT <- round(oos_summary$OOS_8843_PCT, digits = 3)
-oos_summary$OOS_TOTAL_PCT <- round(oos_summary$OOS_TOTAL_PCT, digits = 3)
+oos_summary$OOS_9901_PCT <-
+  round(oos_summary$OOS_9901_PCT, digits = 3)
+oos_summary$OOS_8843_PCT <-
+  round(oos_summary$OOS_8843_PCT, digits = 3)
+oos_summary$OOS_TOTAL_PCT <-
+  round(oos_summary$OOS_TOTAL_PCT, digits = 3)
 
 #oos_summary$OOS_9901_PCT <- percent(oos_summary$OOS_9901_PCT, suffix = "%")
 #oos_summary$OOS_8843_PCT <- percent(oos_summary$OOS_8843_PCT, suffix = "%")
@@ -309,12 +319,13 @@ oos_table <- oos_table %>%
 
 oos_table$OOS <- oos_table$OOS * 100
 
-p <- ggplot(data = oos_table, aes(fill = Release, y = OOS, x = Site)) +
+p <-
+  ggplot(data = oos_table, aes(fill = Release, y = OOS, x = Site)) +
   geom_bar(position = "dodge",
            stat = "identity",
            width = 0.50) +
   #theme(legend.position = "none") +
-  scale_x_discrete(limits=c(9901,8843,"Total")) +
+  scale_x_discrete(limits = c(9901, 8843, "Total")) +
   #scale_y_continuous(labels = paste0("%")) +
   theme_minimal() +
   scale_fill_manual("Release",
@@ -329,54 +340,60 @@ p <- ggplot(data = oos_table, aes(fill = Release, y = OOS, x = Site)) +
             position = position_dodge(width = .5),
             size = 3.1)
 
-p <- p + theme(
-  #axis.title.x = element_blank(),
+p <- p + theme(#axis.title.x = element_blank(),
   #axis.title.y = element_blank(),
-  legend.position = "right"
-)
+  legend.position = "right")
 
 p <-
-  p + ggtitle(
-    paste0("LensCrafters.com OOS % by Site/Release"))
+  p + ggtitle(paste0("LensCrafters.com OOS % by Site/Release"))
 
 p <- p + labs(subtitle = paste0("Updated", " ", Sys.time()))
-              
+
 p <- p + labs(caption = paste0("Source file : ", " ", char))
 
 p <- p + theme(plot.title = element_text(size = 12))
 
 
-png("/home/dmarrero/ecomm/lc-oos-new.png", width = 24, height = 10, units = "cm", res = 90)
+png(
+  "/home/dmarrero/ecomm/lc-oos-new.png",
+  width = 24,
+  height = 10,
+  units = "cm",
+  res = 90
+)
 print(p)
 dev.off()
 
 #options(bitmapType = 'cairo', device = 'png')
 
-#ggsave(
-#  "lc-oos.png",
-#  plot = p,
-#  width = 24,
-#  height = 10,
-#  units = c("cm"),
-#  dpi = 90#,
-#  type = "cairo-png"
-#)
+ggsave(
+  "lc-oos-report.png",                                                           
+  plot = p,                                          
+  width = 24,
+  height = 10,
+  units = c("cm"),
+  dpi = 600,
+  type = "cairo-png"
+)
 
 # Send Automated Email ----------------------------------------------------
 
-subject <- paste0("LC.com OOS Report/Inventory Detail", " ", Sys.Date())
+subject <-
+  paste0("LC.com OOS Report/Inventory Detail", " ", Sys.Date())
 
-send.mail(
+send.mail(                                    
   from = "DMarrero@us.luxottica.com",
-  to = c("DMarrero@us.luxottica.com",
-         "silvia.lorenzi@luxottica.com",
-         "vshell@luxotticaretail.com",
-         "iperaert@luxotticaretail.com"
-         )
+  to = c( 
+    "DMarrero@us.luxottica.com",
+    "silvia.lorenzi@luxottica.com",
+    "vshell@luxotticaretail.com",
+    "iperaert@luxotticaretail.com"
+  )
   ,
-  cc = c("elisabetta.frastalli@luxottica.com",
-         "ecarraro@us.luxottica.com"
-         )
+  cc = c(
+    "elisabetta.frastalli@luxottica.com",
+    "ecarraro@us.luxottica.com"
+  )
   ,
   subject = subject,
   body = "<html> <img src=\"/home/dmarrero/ecomm/lc-oos-new.png\"> </html>",
@@ -388,8 +405,9 @@ send.mail(
     host.name = "smtp.office365.com",
     port = 587,
     user.name = "DMarrero@us.luxottica.com",
-    passwd = "HoltWinters07",
-    tls = TRUE)
+    passwd = "Welcome1",
+    tls = TRUE
+  )
 )
 
 # Clean Up Files ----------------------------------------------------------

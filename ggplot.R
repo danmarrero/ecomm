@@ -1,4 +1,19 @@
+library(tidyverse)
+library(formattable)
+
+
 oos_summary <- read_csv("oos_summary.csv")
+
+
+# Testing out formattable
+
+p <- formattable(oos_summary)
+
+
+png("/home/dmarrero/ecomm/formattable.png", width = 24, height = 10, units = "cm", res = 90)
+print(p)
+dev.off()
+
 
 oos_summary <- oos_summary %>%
   select(CC, ATP, ITR, POOS)
