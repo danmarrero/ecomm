@@ -3,9 +3,7 @@
 # 01 - Load Packages, Global Variables & Options --------------------------
 
 ptm <- proc.time()
-
 rm(list = ls(all.names = TRUE))
-
 options(scipen = 999)
 
 options(googleAuthR.scopes.selected =
@@ -210,8 +208,6 @@ detail <- detail %>%
   mutate("L04W_DPM_APE" = L04W_DPM_ABS / L04W_SLS * 100) %>%
   mutate("L01W_DPM_APE" = L01W_DPM_ABS / LW_SLS * 100)
 
-
-
 detail$L13W_ISA_APE[which(detail$L13W_ISA_APE == Inf)] <- 100
 detail$L04W_ISA_APE[which(detail$L04W_ISA_APE == Inf)] <- 100
 detail$L01W_ISA_APE[which(detail$L01W_ISA_APE == Inf)] <- 100
@@ -226,7 +222,6 @@ detail$L13W_DPM_APE[is.nan(detail$L13W_DPM_APE)] <- 100
 detail$L04W_DPM_APE[is.nan(detail$L04W_DPM_APE)] <- 100
 detail$L01W_DPM_APE[is.nan(detail$L01W_DPM_APE)] <- 100
 
-
 detail <- detail %>%
   mutate("L13W_ISA_WAPE" = L13W_ISA_APE * L13W_SLS) %>%
   mutate("L04W_ISA_WAPE" = L04W_ISA_APE * L04W_SLS) %>%
@@ -238,6 +233,7 @@ detail <- detail %>%
 detail <- detail %>%
   mutate("UPC_CNT" = 1)
 
+detail <- distinct(detail, EAN_UPC, .keep_all = TRUE)
 
 # 04 - Export Data --------------------------------------------------------
 

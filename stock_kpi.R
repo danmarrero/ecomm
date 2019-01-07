@@ -222,6 +222,9 @@ detail <- left_join(detail, lifecycle_gl, by = "MatGrV")
 
 names(detail)[31] <- c("ZZFCAM")
 
+detail <- detail %>%
+  filter(REL != 0)
+
 # Flag Calculations -------------------------------------------------------
 
 detail <- detail %>%

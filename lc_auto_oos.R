@@ -405,7 +405,7 @@ send.mail(
     host.name = "smtp.office365.com",
     port = 587,
     user.name = "DMarrero@us.luxottica.com",
-    passwd = "Welcome1",
+    passwd = "HoltWinters10",
     tls = TRUE
   )
 )
