@@ -28,6 +28,7 @@ library(readxl)
 library(bigrquery)
 library(googleCloudStorageR)
 library(lubridate)
+library(forecast)
 library(stringr)
 
 gcs_auth()
@@ -42,6 +43,9 @@ time_dim <- query_exec(sql, project = project)
 x <- min(time_dim$f_yr_week) + 200
 #x <- max(time_dim$f_yr_week)
 
+sql <- "SELECT * FROM [ecomm-197702:ecomm.fiscal_calendar]"
+fiscal_calendar <- query_exec(sql, project = project)
+
 sql <- paste("DELETE ecomm.fcst_locked_isaiah WHERE yr_wk_lock = ", x ," AND brand = 'GLSCOM'", sep = "")
 query_exec(sql, project = project, use_legacy_sql = FALSE)
 
@@ -54,6 +58,12 @@ gcs_get_object("dpm_hist_fcst.csv",
 gcs_get_object("demand_hist_optical.csv",
                saveToDisk = "demand_hist_optical.csv",
                overwrite = TRUE)
+
+gcs_get_object("gl_seasonal_profiles.csv",
+               saveToDisk = "gl_seasonal_profiles.csv",
+               overwrite = TRUE)
+
+gl_seasonal_profiles <- read_csv("gl_seasonal_profiles.csv")
 
 l52w_sls_dpm <- read_csv(
   "demand_hist_optical.csv"#,
@@ -74,9 +84,28 @@ hist_wk <- query_exec(sql, project = project)
 # 03 - Transform Data -----------------------------------------------------
 
 l52w_sls_dpm <- l52w_sls_dpm %>%
+  select(-`Lifecycle Status`, -`Lifecycle Status Code`)
+
+l52w_sls_dpm$Year <- as.double(l52w_sls_dpm$Year)
+
+l52w_sls_dpm$`Fiscal Week` <- as.double(l52w_sls_dpm$`Fiscal Week`)
+
+l52w_sls_dpm <- l52w_sls_dpm %>%
+  mutate("F_YR" = if_else(l52w_sls_dpm$`Fiscal Week` == 53, l52w_sls_dpm$Year + 1, l52w_sls_dpm$Year)) %>%
+  mutate("F_WK" = if_else(l52w_sls_dpm$`Fiscal Week` == 53, 1, l52w_sls_dpm$`Fiscal Week`))
+
+l52w_sls_dpm <- l52w_sls_dpm %>%
   select(-X1) %>%
   filter(Week != 0) %>%
-  filter(`Ecomm Platform` == "Glasses.com")
+  filter(`Ecomm Platform` == "Glasses.com") %>%
+  filter(!is.na(Collection))
+
+#l52w_sls_dpm <- l52w_sls_dpm %>%
+#  mutate(COL_BRAND = paste0(Collection, `Brand Code`))
+
+l52w_sls_dpm <- l52w_sls_dpm %>%
+  select(`Ecomm Platform`, F_YR, F_WK, Collection, UPC, Orders) %>%
+  filter(!is.na(Collection))
 
 names(l52w_sls_dpm)[1] <- "DPT"
 names(l52w_sls_dpm)[2] <- "F_YR"
@@ -135,6 +164,120 @@ l52w_sls_select_class <- l52w_sls_select %>%
 l52w_sls_select_class <- transform(l52w_sls_select_class, DPT_CL =
                                      paste0(DPT, CL_NME))
 
+
+
+
+gl_seasonal_profiles <-
+  separate(gl_seasonal_profiles,
+           Date,
+           into = c("Date", "Time"),
+           sep = " (?=[^ ]+$)")
+
+gl_seasonal_profiles$Date <- ymd(gl_seasonal_profiles$Date)
+
+gl_seasonal_profiles <- gl_seasonal_profiles %>%
+  select(-X1, -Time) %>%
+  filter(Date != today()) %>%
+  arrange(Date)
+
+fiscal_calendar <- fiscal_calendar %>%
+  select(date, f_year, f_week)
+
+colnames(fiscal_calendar)[1] <- "Date"
+
+gl_seasonal_profiles <- left_join(gl_seasonal_profiles, fiscal_calendar, by = "Date")
+
+gl_seasonal_profiles <- gl_seasonal_profiles %>%
+  filter(f_year >= year(Sys.Date()) - 2)
+
+gl_seasonal_profiles$f_week <- str_pad(gl_seasonal_profiles$f_week,
+                             width = 2,
+                             side = "left",
+                             pad = "0")
+
+gl_seasonal_profiles <- transform(gl_seasonal_profiles, f_yearweek = paste0(f_year, f_week))
+
+gl_seasonal_profiles <- gl_seasonal_profiles %>%
+  filter(f_yearweek != x)
+
+opt_profile <- gl_seasonal_profiles %>%
+  filter(Collection == "Optical") %>%
+  arrange(Date)
+
+opt_profile <- opt_profile %>%
+  select(f_yearweek, Orders) %>%
+  group_by(f_yearweek) %>%
+  summarise(Orders = sum(Orders))
+
+sun_profile <- gl_seasonal_profiles %>%
+  filter(Collection == "Sun") %>%
+  arrange(Date)
+
+sun_profile <- sun_profile %>%
+  select(f_yearweek, Orders) %>%
+  group_by(f_yearweek) %>%
+  summarise(Orders = sum(Orders))
+
+opt_vector <- opt_profile$Orders
+
+opt_ts = ts(opt_vector, frequency = 52)
+
+decompose_opt = decompose(opt_ts, "multiplicative")
+
+#plot(as.ts(decompose_opt$seasonal))
+#plot(as.ts(decompose_opt$trend))
+
+opt_index <- as.data.frame(decompose_opt$seasonal)
+
+opt_index <- opt_index %>%
+  mutate(Week = row_number()) %>%
+  select(Week, x)
+
+colnames(opt_index)[2] <- "INDEX"
+
+opt_index <- opt_index %>%
+  filter(Week <= 52) %>%
+  mutate(Brand = "Glasses.com") %>%
+  mutate(Class = "Optical") %>%
+  select(Brand, Class, Week, INDEX)
+
+opt_index <- transform(opt_index, DPT_CL_WK = paste0(Brand, Class, Week))
+
+opt_index <- opt_index %>%
+  select(DPT_CL_WK, INDEX)
+
+sun_vector <- sun_profile$Orders
+
+sun_ts = ts(sun_vector, frequency = 52)
+
+decompose_sun = decompose(sun_ts, "multiplicative")
+
+plot(as.ts(decompose_sun$seasonal))
+plot(as.ts(decompose_sun$trend))
+
+sun_index <- as.data.frame(decompose_sun$seasonal)
+
+sun_index <- sun_index %>%
+  mutate(Week = row_number()) %>%
+  select(Week, x)
+
+colnames(sun_index)[2] <- "INDEX"
+
+sun_index <- sun_index %>%
+  filter(Week <= 52) %>%
+  mutate(Brand = "Glasses.com") %>%
+  mutate(Class = "Sun") %>%
+  select(Brand, Class, Week, INDEX)
+
+sun_index <- transform(sun_index, DPT_CL_WK = paste0(Brand, Class, Week))
+
+sun_index <- sun_index %>%
+  select(DPT_CL_WK, INDEX)
+
+total_index <- bind_rows(opt_index, sun_index)
+
+
+
 # Create new variable summarising sales units by DPT/CL
 total_class_sls <- l52w_sls_select_class %>%
   group_by(DPT_CL) %>%
@@ -187,7 +330,8 @@ l52w_sls_select_class <-
               paste0(DPT_CL, F_WK))
 
 # Create variable containing INDEX by DPT/CL/WK
-index <- select(l52w_sls_select_class, DPT_CL_WK, INDEX)
+index <- total_index
+#index <- select(l52w_sls_select_class, DPT_CL_WK, INDEX)
 
 # Create column combining DPT/CL/WK
 l17w_sls <-

@@ -11,7 +11,8 @@ sales_lxw <- query_exec(sql, project = project)
 ## Glasses.com CC
 
 sales_lxw_glscom <- sales_lxw %>%
-  filter(brand == "GLSCOM")
+  filter(brand == "GLSCOM") %>%
+  filter(!is.na(upc))
 
 cc <- sales_lxw_glscom %>%
   select(upc, l13w_sls) %>%

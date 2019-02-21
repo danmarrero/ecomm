@@ -17,14 +17,44 @@ output:
 
 
 ```{r setup, include=FALSE}
+
+options(googleAuthR.scopes.selected =
+          "https://www.googleapis.com/auth/cloud-platform")
+
+project <- "ecomm-197702"
+zone <- "us-east4-a"
+account_key <- "gcs-key.json"
+bucket <- "ecomm_lux"
+
+Sys.setenv(
+  GCS_AUTH_FILE = account_key,
+  GCS_DEFAULT_PROJECT_ID = project,
+  GCS_DEFAULT_ZONE = zone,
+  GCS_DEFAULT_BUCKET = bucket
+)
+
+
+
 library(flexdashboard)
 library(tidyverse)
 library(readxl)
+library(bigrquery)
+library(googleCloudStorageR)
 library(scales)
 library(ggrepel)
 library(plotly)
 library(DT)
+
+
+gcs_auth()
+
 ```
+
+
+
+
+
+
 
 Stock
 =======================================================================
@@ -337,7 +367,38 @@ names(detail)[17] <- c("QAF_CURR")
 names(detail)[19] <- c("OOS_ITR")
 
 detail <- detail %>%
-  arrange(desc(L13W_SLS))
+  arrange(desc(L13W_SLS), desc(L04W_SLS), desc(LW_SLS))
+
+detail <- detail %>%
+  mutate("SLS_RANK" = row_number())
+
+detail <- detail %>%
+  select(
+  BRAND,
+  MODEL,
+  GRID_VALUE,
+  EAN_UPC,
+  CONTR_CODE,
+  SLS_RANK,
+  ATP_QTY,
+  ALLOCATED,
+  QUAL_INSP,
+  TRANSIT,
+  L13W_SLS,
+  L04W_SLS,
+  LW_SLS,
+  TW_FCST,
+  N04W_FCST,
+  N13W_FCST,
+  QAF_CALC,
+  QAF_CURR,
+  OOS,
+  OOS_ITR,
+  POOS,
+  REL#,
+  #US03
+  )
+  
 
 #datatable(detail, rownames = FALSE,
 #          extensions = 'Buttons',
