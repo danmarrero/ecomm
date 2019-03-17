@@ -233,7 +233,7 @@ dt <- Sys.time()
 
 xlsx <- paste("LC Inventory Report ", dt , ".xlsx", sep = "")
 
-write.xlsx(supply_lc, xlsx, asTable = TRUE, colWidths = "auto")
+write.xlsx(supply_lc, xlsx, asTable = FALSE, colWidths = "auto")
 
 # OOS Flag Calculations ---------------------------------------------------
 
@@ -338,7 +338,7 @@ p <-
                 label = paste0(OOS, '%')),
             # prettify
             position = position_dodge(width = .5),
-            size = 3.1)
+            size = 2.4)
 
 p <- p + theme(#axis.title.x = element_blank(),
   #axis.title.y = element_blank(),
@@ -356,10 +356,11 @@ p <- p + theme(plot.title = element_text(size = 12))
 
 png(
   "/home/dmarrero/ecomm/lc-oos-new.png",
-  width = 24,
+  width = 17,
   height = 10,
   units = "cm",
-  res = 90
+  #res = 90
+  res = 110
 )
 print(p)
 dev.off()
@@ -369,7 +370,7 @@ dev.off()
 ggsave(
   "lc-oos-report.png",                                                           
   plot = p,                                          
-  width = 24,
+  width = 17,
   height = 10,
   units = c("cm"),
   dpi = 600,
@@ -405,7 +406,7 @@ send.mail(
     host.name = "smtp.office365.com",
     port = 587,
     user.name = "DMarrero@us.luxottica.com",
-    passwd = "HoltWinters10",
+    passwd = "HoltWinters11",
     tls = TRUE
   )
 )

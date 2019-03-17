@@ -239,6 +239,9 @@ detail <- left_join(detail, sap_us03_gl, by = "UPC")
 
 detail[is.na(detail)] <- 0
 
+detail <- detail %>%
+  filter(ZZFCAM == "NA")
+
 oos_summary <- detail %>%
   select(CC, UPC_CNT, OOS, OOS_WITH_TRANSIT, POOS) %>%
   group_by(CC) %>%

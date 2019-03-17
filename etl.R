@@ -1,9 +1,5 @@
 # ETL Script
 
-# Extracting from FTP
-# Transforming using dplyr
-# Loading into Google Cloud Storage/BigQuery
-
 ptm <- proc.time()
 
 rm(list = ls(all.names = TRUE))
@@ -29,7 +25,6 @@ library(tidyverse)
 library(readxl)
 library(bigrquery)
 library(googleCloudStorageR)
-
 
 gcs_auth()
 

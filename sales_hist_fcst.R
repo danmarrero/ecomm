@@ -650,7 +650,9 @@ fcst_wks <- unique(fcst_wks)
 fcst_wks <- mutate(fcst_wks, "FCST_YR_WK" = F_YR_WK + 100)
 fcst_wks$F_YR_WK <- NULL
 fcst_wks$HIST_WK <- NULL
-fcst_wks <- rename(fcst_wks, WK = F_WK)
+
+colnames(fcst_wks)[1] <- "WK"
+
 fcst$WK <- as.numeric(as.character(fcst$WK))
 fcst <- left_join(fcst, fcst_wks, by = "WK")
 fcst <- fcst %>%

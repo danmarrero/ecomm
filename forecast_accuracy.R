@@ -55,7 +55,7 @@ z <- hist_wk %>%
 lag13 <- z$f_yr_week
 
 
-# Isaiah Forcast
+# Isaiah Forecast
 
 sql <-
   paste(

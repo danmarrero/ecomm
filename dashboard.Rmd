@@ -323,6 +323,9 @@ Column {data-width=1000}
 detail <- read_csv("qaf_detail.csv")
 
 detail <- detail %>%
+  filter(is.na(ZZFCAM))
+
+detail <- detail %>%
 select(
 BRAND,
 MODELLO,
