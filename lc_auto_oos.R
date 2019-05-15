@@ -51,12 +51,20 @@ gcs_auth()
 
 campaign_lc <-
   gcs_get_object("campaign_lc.csv", bucket = "ecomm_lux")
+
 demand_lc <- gcs_get_object("demand_lc.csv", bucket = "ecomm_lux")
+
 assortment_lc <-
   gcs_get_object("assortment_lc.csv", bucket = "ecomm_lux")
 
 sap_lc_ms_wr60 <-
   gcs_get_object("sap_lc_ms_wr60.csv", bucket = "ecomm_lux")
+
+trans_ship_008600 <-
+  gcs_get_object("trans_ship_008600.csv", bucket = "ecomm_lux")
+
+zupc_ago_8843 <-
+  gcs_get_object("zupc_ago_8843.csv", bucket = "ecomm_lux")
 
 project <- "ecomm-197702"
 sql <- "SELECT * FROM [ecomm-197702:ecomm.time_dim]"
@@ -70,6 +78,8 @@ campaign_lc <- campaign_lc %>% select(-X1)
 demand_lc <- demand_lc %>% select(-X1)
 assortment_lc <- assortment_lc %>% select(-X1)
 sap_lc_ms_wr60 <- sap_lc_ms_wr60 %>% select(-X1)
+trans_ship_008600 <- trans_ship_008600 %>% select(-X1)
+zupc_ago_8843 <- zupc_ago_8843 %>% select(-X1)
 
 userpwd <- "sghbrand:mqiQp2o6kxtko"
 
@@ -194,6 +204,18 @@ demand_wtd$UPC <- as.numeric(demand_wtd$UPC)
 
 supply_lc <- assortment_lc
 
+supply_lc <- left_join(supply_lc, zupc_ago_8843, by = "UPC")
+
+supply_lc <- supply_lc %>%
+  select(UPC, ARTICLE, CORE_BRAND, Brand, Model, Grid, Color, Size, `Model Description`,
+         CORE_OPH_SUN_ACCESSORIES, `Frame Color`, `Lens Color`, NPI, MODEL_STOCK)
+
+colnames(supply_lc)[2] <- "ARTICLE"
+colnames(supply_lc)[3] <- "Core Brand"
+colnames(supply_lc)[10] <- "Product Type"
+colnames(supply_lc)[14] <- "Model Stock"
+
+
 campaign_lc <- campaign_lc %>%
   select(UPC, CAMPAIGN, EDM)
 
@@ -224,10 +246,33 @@ supply_lc <- supply_lc %>%
 
 supply_lc <- supply_lc[!duplicated(supply_lc$UPC),]
 
-colnames(supply_lc)[7] <- "CORE_PROD_TYPE"
+supply_lc <- supply_lc %>%
+  mutate(ModelGrid = paste0(Model, Grid))
 
 supply_lc <- supply_lc %>%
   arrange(desc(L13W_SLS))
+
+trans_ship_008600 <- trans_ship_008600 %>%
+  select(Material, `Grid Value`, Complete, `Transit Qty`) %>%
+  filter(is.na(Complete))
+
+trans_ship_008600 <- trans_ship_008600 %>%
+  mutate(ModelGrid = paste0(Material, `Grid Value`)) %>%
+  select(ModelGrid, `Transit Qty`)
+
+trans_ship <- trans_ship_008600 %>%
+  group_by(ModelGrid) %>%
+  summarise(`Transit 9901` = sum(`Transit Qty`))
+
+supply_lc <- left_join(supply_lc, trans_ship, by = "ModelGrid")
+
+supply_lc[is.na(supply_lc)] <- 0
+
+supply_lc <- supply_lc %>%
+  select(-DateTime, everything())
+
+supply_lc <- supply_lc %>%
+  select(-ModelGrid)
 
 dt <- Sys.time()
 
@@ -334,11 +379,11 @@ p <-
                       "NPI" = "#7FA8C8",
                       "Total" = "#DFE9F1"
                     )) +
-  geom_text(aes(y = OOS + .6,    # nudge above top of bar
+  geom_text(aes(y = OOS + .9,    # nudge above top of bar
                 label = paste0(OOS, '%')),
             # prettify
             position = position_dodge(width = .5),
-            size = 2.4)
+            size = 2.2)
 
 p <- p + theme(#axis.title.x = element_blank(),
   #axis.title.y = element_blank(),
@@ -356,7 +401,7 @@ p <- p + theme(plot.title = element_text(size = 12))
 
 png(
   "/home/dmarrero/ecomm/lc-oos-new.png",
-  width = 17,
+  width = 16,
   height = 10,
   units = "cm",
   #res = 90
@@ -370,7 +415,7 @@ dev.off()
 ggsave(
   "lc-oos-report.png",                                                           
   plot = p,                                          
-  width = 17,
+  width = 26,
   height = 10,
   units = c("cm"),
   dpi = 600,
@@ -385,16 +430,17 @@ subject <-
 send.mail(                                    
   from = "DMarrero@us.luxottica.com",
   to = c( 
-    "DMarrero@us.luxottica.com",
-    "silvia.lorenzi@luxottica.com",
-    "vshell@luxotticaretail.com",
-    "iperaert@luxotticaretail.com"
+    "DMarrero@us.luxottica.com"#,
+    #"silvia.lorenzi@luxottica.com",
+    #"vshell@luxotticaretail.com",
+    #"iperaert@luxotticaretail.com",
+    #"ashaffer@luxotticaretail.com"
   )
-  ,
-  cc = c(
-    "elisabetta.frastalli@luxottica.com",
-    "ecarraro@us.luxottica.com"
-  )
+  #,
+  #cc = c(
+  #  "elisabetta.frastalli@luxottica.com",
+  #  "ecarraro@us.luxottica.com"
+  #)
   ,
   subject = subject,
   body = "<html> <img src=\"/home/dmarrero/ecomm/lc-oos-new.png\"> </html>",
@@ -406,7 +452,7 @@ send.mail(
     host.name = "smtp.office365.com",
     port = 587,
     user.name = "DMarrero@us.luxottica.com",
-    passwd = "HoltWinters11",
+    passwd = "HoltWinters13",
     tls = TRUE
   )
 )
