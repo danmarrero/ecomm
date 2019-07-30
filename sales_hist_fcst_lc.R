@@ -55,7 +55,7 @@ gcs_get_object("lc_to_dmd.csv",
                overwrite = TRUE)
 
 l52w_sls_dpm <- read_csv(
-  "lc_to_dmd.csv"#,
+  "demand_lc_8843_new.csv"#,
   #  col_types = cols(
   #    `Comm Unconsumed Fcst` = col_number(),
   #    `Stat Unconsumed Fcst` = col_number()
@@ -73,15 +73,20 @@ hist_wk <- query_exec(sql, project = project)
 # 03 - Transform Data -----------------------------------------------------
 
 l52w_sls_dpm <- l52w_sls_dpm %>%
-  select(-X1) %>%
-  filter(Week != 0) %>%
-  filter(`Ecomm Platform` == "LensCrafter.com")
+  select(Organization, `Fiscal Year`, `Fiscal Week of Year`,
+         `Commodity Name`, UPC, `Retail Units`)
+
+l52w_sls_dpm$Organization <- "LensCrafter.com"
 
 l52w_sls_dpm <- l52w_sls_dpm %>%
-  filter(!is.na(Collection))
+  filter(`Commodity Name` != "Contacts")
 
 l52w_sls_dpm <- l52w_sls_dpm %>%
-  select(`Ecomm Platform`, Year, Week, Collection, `UPC WCS`, `Gross Pieces`)
+  mutate(Collection = if_else(`Commodity Name` == "Frames", "Optical", "Sun"))
+
+l52w_sls_dpm <- l52w_sls_dpm %>%
+  select(Organization, `Fiscal Year`, `Fiscal Week of Year`,
+         Collection, UPC, `Retail Units`)
 
 names(l52w_sls_dpm)[1] <- "DPT"
 names(l52w_sls_dpm)[2] <- "F_YR"
@@ -91,7 +96,7 @@ names(l52w_sls_dpm)[5] <- "SKU_NBR"
 names(l52w_sls_dpm)[6] <- "SLS_U"
 #names(l52w_sls_dpm)[7] <- "FCST_DPM"
 
-l52w_sls_dpm$CL_NME <- "Glasses"
+#l52w_sls_dpm$CL_NME <- "Glasses"
 
 names(hist_wk)[1] <- "F_YR_WK"
 names(hist_wk)[2] <- "HIST_WK"
@@ -132,6 +137,9 @@ l52w_sls_select <-
 
 # Filter new variable to not show negative sales
 #l52w_sls_select <- filter(l52w_sls_select, l52w_sls_select$SLS_U > 0)
+
+
+lc_total_index <- read_csv("lc_total_index.csv")
 
 # Create new variable summarising sales units by DPT/CL/WK
 l52w_sls_select_class <- l52w_sls_select %>%
@@ -194,7 +202,8 @@ l52w_sls_select_class <-
               paste0(DPT_CL, F_WK))
 
 # Create variable containing INDEX by DPT/CL/WK
-index <- select(l52w_sls_select_class, DPT_CL_WK, INDEX)
+index <- lc_total_index
+#index <- select(l52w_sls_select_class, DPT_CL_WK, INDEX)
 
 # Create column combining DPT/CL/WK
 l17w_sls <-
@@ -419,6 +428,8 @@ new_df <- new_df %>%
 
 fcst_level <- new_df$LVL_17
 fcst_level <- as.data.frame(fcst_level)
+
+fcst_index <- read_csv("lc_fcst_index.csv")
 
 fcst_index <-
   l52w_sls_select_class %>% select(DPT_CL, F_WK, INDEX) %>%

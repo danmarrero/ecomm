@@ -120,13 +120,13 @@ detail <- qaf %>%
   #filter(DATESTCODE == "008460")
 
 sku <- zupc %>%
-  select(Material, Dim.value2, Dim.value1, `Grid value`, `Primary UPC`) %>%
+  select(Material, Dim.value2, Dim.value1, `Grid value`, `Prime.UPC`) %>%
   unite(SKU, Material, Dim.value2, Dim.value1, sep = "")
 
 detail <- left_join(detail, sku, by = "SKU")
 
 sku2 <- zupc %>%
-  select(`Primary UPC`, Material, `Grid value`) %>%
+  select(`Prime.UPC`, Material, `Grid value`) %>%
   unite(SKU2, Material, `Grid value`, sep = "", remove = TRUE)
 
 stock_avail <- stock %>%

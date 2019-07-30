@@ -26,14 +26,15 @@ Sys.setenv(
 library(tidyverse)
 library(readxl)
 library(bigrquery)
-library(googleCloudStorageR)
+library(googleCloudStorageR)  
 library(lubridate)
 library(forecast)
 library(stringr)
+library(optimr)
 
 gcs_auth()
 
-# 02 - Import Data --------------------------------------------------------
+# 02 - Import Data -------------------------------------------------------------
 
 # Delete Current Week Data (if any) from BigQuery Table before Forecasting
 
@@ -274,9 +275,9 @@ sun_index <- transform(sun_index, DPT_CL_WK = paste0(Brand, Class, Week))
 sun_index <- sun_index %>%
   select(DPT_CL_WK, INDEX)
 
-total_index <- bind_rows(opt_index, sun_index)
+total_index1 <- bind_rows(opt_index, sun_index)
 
-
+total_index <- read_csv("total_index.csv")
 
 # Create new variable summarising sales units by DPT/CL
 total_class_sls <- l52w_sls_select_class %>%
@@ -422,9 +423,11 @@ names(l17w_sls_cast)[19:35] <-
 iter_df <- l17w_sls_cast[FALSE, ]
 new_df <- data.frame()
 
-hwdtms <- function(a = 0.1,
-                   g = 0,
-                   p = 0) {
+hwdtms <- function(param)
+  {
+  a = param[1]
+  g = 0
+  p = 0
   lvl_1 <- iter_df$SLS_1 / iter_df$IND_1
   trnd_1 <- 0
   lvl_2 <- a * iter_df$SLS_2 / iter_df$IND_2 +
@@ -487,18 +490,18 @@ hwdtms <- function(a = 0.1,
   wmape <- sum(wape) / sum(act_sum)
   bias <- sum(sign_error) / sum(act_sum)
   return(abs_e)
-}
+  }
 
 # Optimize Model
 
 for (i in 1:nrow(l17w_sls_cast)) {
   iter_df <- l17w_sls_cast[i, ]
   parameters <- optim(
-    c(0.1),
-    hwdtms,
+    par=c(0.1),
+    fn=hwdtms,
     method = "L-BFGS-B",
-    lower = c(0.1),
-    upper = c(0.75)
+    lower = c(0),
+    upper = c(1)
   )
   iter_df$ALPHA <- parameters$par[1]
   iter_df$GAMMA <- parameters$par[2]
@@ -557,8 +560,13 @@ new_df <- new_df %>%
 fcst_level <- new_df$LVL_17
 fcst_level <- as.data.frame(fcst_level)
 
-fcst_index <-
-  l52w_sls_select_class %>% select(DPT_CL, F_WK, INDEX) %>%
+fcst_index <- read_csv("fcst_index.csv")
+
+#fcst_index <-
+#  l52w_sls_select_class %>% select(DPT_CL, F_WK, INDEX) %>%
+#  spread(F_WK, INDEX, fill = 0.1)
+
+fcst_index <- fcst_index %>%
   spread(F_WK, INDEX, fill = 0.1)
 
 fcst_skus <- l17w_sls_cast %>%
