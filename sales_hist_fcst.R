@@ -500,8 +500,8 @@ for (i in 1:nrow(l17w_sls_cast)) {
     par=c(0.1),
     fn=hwdtms,
     method = "L-BFGS-B",
-    lower = c(0),
-    upper = c(1)
+    lower = c(0.1),
+    upper = c(0.8)
   )
   iter_df$ALPHA <- parameters$par[1]
   iter_df$GAMMA <- parameters$par[2]
