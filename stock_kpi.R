@@ -228,8 +228,8 @@ detail <- detail %>%
 # Flag Calculations -------------------------------------------------------
 
 detail <- detail %>%
-  mutate("OOS" = if_else(AVAILABLE <= 2, 1, 0)) %>%
-  mutate("OOS_WITH_TRANSIT" = if_else(AVAILABLE + TRANSIT + `QUAL-INSP` > 2,
+  mutate("OOS" = if_else(AVAILABLE < 1, 1, 0)) %>%
+  mutate("OOS_WITH_TRANSIT" = if_else(AVAILABLE + TRANSIT + `QUAL-INSP` > 0,
                                       0, 1)) %>%
   mutate("POOS" = if_else(OOS == 0 & AVAILABLE + TRANSIT + `QUAL-INSP` < N04W_FCST,
                                     1, 0)) %>%

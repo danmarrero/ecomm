@@ -34,6 +34,91 @@ gcs_auth()
 
 # 02 - Import Data --------------------------------------------------------
 
+l52w_sls_dpm <- read_csv("ORDERS_YTD_REPORT.csv")
+
+l52w_sls_dpm <- separate(data =  l52w_sls_dpm,
+                         col = `Order Created`,
+                         into = c("Date", "Time"),
+                         sep = " ")
+
+l52w_sls_dpm <- l52w_sls_dpm %>%
+  select(`Order Number`,
+         Date,
+         `Order Items Commodity`,
+         Manufacturer,
+         `Order Item Partnumber`,
+         Quantity)
+
+l52w_sls_dpm$Date <- lubridate::mdy(l52w_sls_dpm$Date)
+
+l52w_sls_dpm <- l52w_sls_dpm %>%
+  dplyr::filter(`Order Items Commodity` %in% c("EYE", "SUN"))
+
+l52w_sls_dpm <- l52w_sls_dpm %>%
+  dplyr::distinct()
+
+l52w_sls_dpm <- l52w_sls_dpm %>%
+  mutate(YEAR = isoyear(Date)) %>%
+  mutate(WEEK = isoweek(Date)) %>%
+  mutate(Organization = "LensCrafter.com")
+
+l52w_sls_dpm <- l52w_sls_dpm %>%
+  filter(WEEK != 38)
+
+l52w_sls_dpm <- l52w_sls_dpm %>%
+  select(Organization,
+         YEAR,
+         WEEK,
+         `Order Items Commodity`,
+         `Order Item Partnumber`,
+         Quantity)
+
+l52w_sls_dpm <- l52w_sls_dpm %>%
+  mutate(CL_NME = if_else(`Order Items Commodity` == "EYE", "Optical", "Sun"))
+
+l52w_sls_dpm <- l52w_sls_dpm %>%
+  select(Organization,
+         YEAR,
+         WEEK,
+         CL_NME,
+         `Order Item Partnumber`,
+         Quantity)
+
+names(l52w_sls_dpm)[1] <- "DPT"
+names(l52w_sls_dpm)[2] <- "F_YR"
+names(l52w_sls_dpm)[3] <- "F_WK"
+names(l52w_sls_dpm)[4] <- "CL_NME"
+names(l52w_sls_dpm)[5] <- "SKU_NBR"
+names(l52w_sls_dpm)[6] <- "SLS_U"
+
+l52w_sls_dpm <- l52w_sls_dpm %>%
+  group_by(DPT, F_YR, F_WK, CL_NME, SKU_NBR) %>%
+  summarise(SLS_U = sum(SLS_U)) %>%
+  as.data.frame()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Delete Current Week Data (if any) from BigQuery Table before Forecasting
 
 sql <- "SELECT * FROM [ecomm-197702:ecomm.time_dim]"
@@ -54,14 +139,14 @@ gcs_get_object("lc_to_dmd.csv",
                saveToDisk = "lc_to_dmd.csv",
                overwrite = TRUE)
 
-l52w_sls_dpm <- read_csv(
-  "demand_lc_8843_new.csv"#,
+#l52w_sls_dpm <- read_csv(
+#  "demand_lc_8843_new.csv"#,
   #  col_types = cols(
   #    `Comm Unconsumed Fcst` = col_number(),
   #    `Stat Unconsumed Fcst` = col_number()
   #  ),
   #  locale = locale(encoding = "ISO-8859-1")
-)
+#)
 
 sql <- "SELECT   f_yr_week, id
 FROM     [ecomm-197702:ecomm.time_dim]
@@ -72,28 +157,28 @@ hist_wk <- query_exec(sql, project = project)
 
 # 03 - Transform Data -----------------------------------------------------
 
-l52w_sls_dpm <- l52w_sls_dpm %>%
-  select(Organization, `Fiscal Year`, `Fiscal Week of Year`,
-         `Commodity Name`, UPC, `Retail Units`)
+#l52w_sls_dpm <- l52w_sls_dpm %>%
+#  select(Organization, `Fiscal Year`, `Fiscal Week of Year`,
+#         `Commodity Name`, UPC, `Retail Units`)
 
-l52w_sls_dpm$Organization <- "LensCrafter.com"
+#l52w_sls_dpm$Organization <- "LensCrafter.com"
 
-l52w_sls_dpm <- l52w_sls_dpm %>%
-  filter(`Commodity Name` != "Contacts")
+#l52w_sls_dpm <- l52w_sls_dpm %>%
+#  filter(`Commodity Name` != "Contacts")
 
-l52w_sls_dpm <- l52w_sls_dpm %>%
-  mutate(Collection = if_else(`Commodity Name` == "Frames", "Optical", "Sun"))
+#l52w_sls_dpm <- l52w_sls_dpm %>%
+#  mutate(Collection = if_else(`Commodity Name` == "Frames", "Optical", "Sun"))
 
-l52w_sls_dpm <- l52w_sls_dpm %>%
-  select(Organization, `Fiscal Year`, `Fiscal Week of Year`,
-         Collection, UPC, `Retail Units`)
+#l52w_sls_dpm <- l52w_sls_dpm %>%
+#  select(Organization, `Fiscal Year`, `Fiscal Week of Year`,
+#         Collection, UPC, `Retail Units`)
 
-names(l52w_sls_dpm)[1] <- "DPT"
-names(l52w_sls_dpm)[2] <- "F_YR"
-names(l52w_sls_dpm)[3] <- "F_WK"
-names(l52w_sls_dpm)[4] <- "CL_NME"
-names(l52w_sls_dpm)[5] <- "SKU_NBR"
-names(l52w_sls_dpm)[6] <- "SLS_U"
+#names(l52w_sls_dpm)[1] <- "DPT"
+#names(l52w_sls_dpm)[2] <- "F_YR"
+#names(l52w_sls_dpm)[3] <- "F_WK"
+#names(l52w_sls_dpm)[4] <- "CL_NME"
+#names(l52w_sls_dpm)[5] <- "SKU_NBR"
+#names(l52w_sls_dpm)[6] <- "SLS_U"
 #names(l52w_sls_dpm)[7] <- "FCST_DPM"
 
 #l52w_sls_dpm$CL_NME <- "Glasses"
@@ -179,7 +264,7 @@ hist_wks <- l52w_sls %>%
   select(F_YR_WK) %>%
   distinct(F_YR_WK)
 
-h_wk_vector <- c(52:1)
+h_wk_vector <- c(37:1)
 h_wk_vector <- as.vector(h_wk_vector)
 
 hist_wks$HIST_WK <- h_wk_vector
@@ -224,22 +309,40 @@ l17w_sls <- l17w_sls %>%
 l17w_sls <- l17w_sls %>%
   filter(!is.na(SKU_NBR))
 
+SKU_DPT_CL_WK <- l17w_sls %>%
+  select(SKU_NBR, DPT_CL_WK) %>%
+  distinct()
+
+SKU_DPT_CL_WK$DPT_CL_WK <- str_sub(SKU_DPT_CL_WK$DPT_CL_WK, 1, str_length(SKU_DPT_CL_WK$DPT_CL_WK)-2)
+
+SKU_DPT_CL_WK <- SKU_DPT_CL_WK %>%
+  distinct()
+
 l17w_sls_cast <-
   l17w_sls %>% select(F_YR_WK, SKU_NBR, sum.SLS_U.) %>%
   spread(F_YR_WK, sum.SLS_U., fill = 0)
 
 l17w_sls_cast_2 <-
-  l17w_sls %>% select(F_YR_WK_2, SKU_NBR, INDEX) %>%
-  spread(F_YR_WK_2, INDEX, fill = 0.1)
+  l17w_sls %>% select(F_YR_WK_2, DPT_CL_WK, INDEX) %>%
+  distinct()
+
+l17w_sls_cast_2$DPT_CL_WK <- str_sub(l17w_sls_cast_2$DPT_CL_WK, 1, str_length(l17w_sls_cast_2$DPT_CL_WK)-2)
+  
+l17w_sls_cast_2 <- l17w_sls_cast_2 %>%
+ spread(F_YR_WK_2, INDEX)
 
 # Bind data frames and remove duplicate columns
 
-l17w_sls_cast <- bind_cols(l17w_sls_cast, l17w_sls_cast_2)
+l17w_sls_cast <- left_join(l17w_sls_cast, SKU_DPT_CL_WK, by = "SKU_NBR")
+
+#l17w_sls_cast$DPT_CL_WK <- str_sub(l17w_sls_cast$DPT_CL_WK, 1, str_length(l17w_sls_cast$DPT_CL_WK)-2)
+
+l17w_sls_cast <- left_join(l17w_sls_cast, l17w_sls_cast_2, by = "DPT_CL_WK")
 l17w_sls_cast <-
   l17w_sls_cast[,!duplicated(colnames(l17w_sls_cast))]
 
 l17w_sls_cast <- l17w_sls_cast %>%
-  select(-SKU_NBR1)
+  select(-DPT_CL_WK)
 
 # Rename column headers
 
@@ -370,7 +473,7 @@ for (i in 1:nrow(l17w_sls_cast)) {
     hwdtms,
     method = "L-BFGS-B",
     lower = c(0.1),
-    upper = c(0.75)
+    upper = c(0.5)
   )
   iter_df$ALPHA <- parameters$par[1]
   iter_df$GAMMA <- parameters$par[2]
@@ -431,8 +534,11 @@ fcst_level <- as.data.frame(fcst_level)
 
 fcst_index <- read_csv("lc_fcst_index.csv")
 
-fcst_index <-
-  l52w_sls_select_class %>% select(DPT_CL, F_WK, INDEX) %>%
+#fcst_index <-
+#  l52w_sls_select_class %>% select(DPT_CL, F_WK, INDEX) %>%
+#  spread(F_WK, INDEX, fill = 0.1)
+
+fcst_index <- fcst_index %>%
   spread(F_WK, INDEX, fill = 0.1)
 
 fcst_skus <- l17w_sls_cast %>%
@@ -493,21 +599,6 @@ fcst <- fcst %>%
     `35`,
     `36`,
     `37`,
-    `38`,
-    `39`,
-    `40`,
-    `41`,
-    `42`,
-    `43`,
-    `44`,
-    `45`,
-    `46`,
-    `47`,
-    `48`,
-    `49`,
-    `50`,
-    `51`,
-    `52`,
     key = "WK",
     value = "INDEX"
   )
@@ -519,6 +610,8 @@ fcst <- fcst %>%
 
 fcst_wks <- l52w_sls_select %>%
   select(F_WK, F_YR_WK, HIST_WK)
+
+fcst_wks <- read_csv("fcst_wks.csv")
 
 fcst_wks <- unique(fcst_wks)
 fcst_wks <- mutate(fcst_wks, "FCST_YR_WK" = F_YR_WK + 100)
@@ -564,10 +657,10 @@ hist_l52w_sls <- hist_l52w_sls %>%
   mutate("l04w_sls" = rowSums(.[2:5])) %>%
   mutate("l13w_sls" = rowSums(.[2:14])) %>%
   mutate("l26w_sls" = rowSums(.[2:27])) %>%
-  mutate("l52w_sls" = rowSums(.[2:53])) %>%
+  #mutate("l52w_sls" = rowSums(.[2:53])) %>%
   mutate("brand" = "LC") %>%
-  select(brand, SKU_NBR, lw_sls, l04w_sls, l13w_sls, l26w_sls, l52w_sls) %>%
-  filter(l52w_sls > 0)
+  select(brand, SKU_NBR, lw_sls, l04w_sls, l13w_sls, l26w_sls) %>%
+  filter(l26w_sls > 0)
 
 names(hist_l52w_sls)[2] <- "upc"
 
@@ -584,7 +677,7 @@ yr_wk_lock <- as_vector(curr_week[1] + 100)
 fcst_sku_loc <- fcst %>%
   spread(FCST_YR_WK, FCST, fill = 0)
 
-names(fcst_sku_loc)[6:57] <-
+names(fcst_sku_loc)[6:42] <-
   c(
     "1",
     "2",
@@ -622,22 +715,7 @@ names(fcst_sku_loc)[6:57] <-
     "34",
     "35",
     "36",
-    "37",
-    "38",
-    "39",
-    "40",
-    "41",
-    "42",
-    "43",
-    "44",
-    "45",
-    "46",
-    "47",
-    "48",
-    "49",
-    "50",
-    "51",
-    "52"
+    "37"
   )
 
 fcst_sku_loc <- fcst_sku_loc %>%
@@ -668,8 +746,8 @@ fcst_sku_loc <- fcst_sku_loc %>%
       fcst_sku_loc$`19` + fcst_sku_loc$`20` + fcst_sku_loc$`21` +
       fcst_sku_loc$`22` + fcst_sku_loc$`23` + fcst_sku_loc$`24` +
       fcst_sku_loc$`25` + fcst_sku_loc$`26`
-  ) %>%
-  mutate("n52w_fcst" = rowSums(.[6:57]))
+  )# %>%
+#  mutate("n52w_fcst" = rowSums(.[6:57]))
 
 colnames(fcst_sku_loc)[3] <- "upc"
 
@@ -683,11 +761,10 @@ fcst_isaiah <- fcst_sku_loc %>%
          tw_fcst,
          n04w_fcst,
          n13w_fcst,
-         n26w_fcst,
-         n52w_fcst) %>%
-  filter(n52w_fcst > 0)
+         n26w_fcst) %>%
+  filter(n26w_fcst > 0)
 
-fcst_isaiah$n52w_fcst[is.na(fcst_isaiah$n52w_fcst)] <- 0
+#fcst_isaiah$n52w_fcst[is.na(fcst_isaiah$n52w_fcst)] <- 0
 fcst_isaiah$n26w_fcst[is.na(fcst_isaiah$n26w_fcst)] <- 0
 fcst_isaiah$n13w_fcst[is.na(fcst_isaiah$n13w_fcst)] <- 0
 fcst_isaiah$n04w_fcst[is.na(fcst_isaiah$n04w_fcst)] <- 0
